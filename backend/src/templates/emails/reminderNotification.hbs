@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Reminder: {{title}}</title>
+</head>
+<body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 40px 20px;">
+    <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+        
+        <!-- Header -->
+        <div style="padding: 24px 32px; border-bottom: 1px solid #f1f5f9; display: table; width: 100%; box-sizing: border-box;">
+            <div style="display: table-cell; vertical-align: middle;">
+                <div style="display: inline-block; background-color: #f1f5f9; border-radius: 8px; padding: 8px; font-weight: 800; font-size: 14px; color: #0f172a; letter-spacing: 0.5px;">TMS</div>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 32px;">
+            <h1 style="color: #0f172a; margin: 0 0 16px 0; font-size: 20px; font-weight: 700;">Upcoming Reminder</h1>
+            <p style="color: #475569; font-size: 15px; line-height: 1.5; margin: 0 0 24px 0;">Hello <strong>{{name}}</strong>,<br><br>This is a quick automated notification. You have a reminder scheduled in exactly 5 minutes.</p>
+            
+            <!-- Reminder Card -->
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 32px;">
+                <div style="margin-bottom: 12px;">
+                    <span style="display: inline-block; background-color: #dbeafe; color: #1e40af; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.5px;">Reminder</span>
+                </div>
+                <h3 style="margin: 0 0 8px 0; color: #0f172a; font-size: 16px; font-weight: 700;">{{title}}</h3>
+                <p style="margin: 0; color: #64748b; font-size: 13px; font-weight: 500;">
+                    Scheduled for: <strong style="color: #0f172a;">{{time}}</strong>
+                </p>
+            </div>
+            
+            <!-- Footer -->
+            <p style="color: #94a3b8; font-size: 13px; margin: 0; padding-top: 24px; border-top: 1px solid #f1f5f9; line-height: 1.5;">
+                This notification was sent by your Task Management System.<br>
+                Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
