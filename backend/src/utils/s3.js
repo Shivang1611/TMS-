@@ -6,8 +6,8 @@ const s3Client = new S3Client({
   region: 'us-east-1',
   endpoint: 'https://del1.vultrobjects.com',
   credentials: {
-    accessKeyId: process.env.VULTR_ACCESS_KEY || 'QVN07YZVQ8686VAKDEZ2',
-    secretAccessKey: process.env.VULTR_SECRET_KEY || 'eJJkPET86xzD0jQQ97GDfJBnUntKcS6R4JC0n84w',
+    accessKeyId: process.env.VULTR_ACCESS_KEY,
+    secretAccessKey: process.env.VULTR_SECRET_KEY,
   },
   forcePathStyle: true,
 });
