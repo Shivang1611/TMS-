@@ -22,3 +22,12 @@ Thumbs.db
 # User Uploads
 uploads/
 backend/uploads/
+
+# IDEs and Editors
+.vscode/
+.idea/
+
+# Local Scripts
+backend/clean-tasks.js
+backend/wipe-db.js
+backend/test-*.js
