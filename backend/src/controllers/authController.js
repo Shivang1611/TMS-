@@ -40,6 +40,7 @@ exports.register = asyncHandler(async (req, res) => {
       token,
       user: {
         id: user._id,
+        _id: user._id,
         email: user.email,
         name: user.name,
         role: user.role,
@@ -88,6 +89,7 @@ exports.login = asyncHandler(async (req, res) => {
       token,
       user: {
         id: user._id,
+        _id: user._id,
         email: user.email,
         name: user.name,
         role: user.role,

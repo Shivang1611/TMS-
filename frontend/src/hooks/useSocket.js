@@ -61,6 +61,7 @@ export default function useSocket(token) {
 
       // Invalidate task lists (all query variations)
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
 
       // Invalidate project detail if projectId is available
       if (data.projectId) {

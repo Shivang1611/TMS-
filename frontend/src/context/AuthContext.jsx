@@ -7,7 +7,12 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('tms_user');
-      return saved ? JSON.parse(saved) : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && !parsed._id && parsed.id) parsed._id = parsed.id;
+        return parsed;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -42,18 +47,22 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const res = await authApi.login({ email, password });
+    const loggedUser = res.data.user;
+    if (!loggedUser._id && loggedUser.id) loggedUser._id = loggedUser.id;
     localStorage.setItem('tms_token', res.data.token);
-    localStorage.setItem('tms_user', JSON.stringify(res.data.user));
-    setUser(res.data.user);
-    return res.data.user;
+    localStorage.setItem('tms_user', JSON.stringify(loggedUser));
+    setUser(loggedUser);
+    return loggedUser;
   }, []);
 
   const register = useCallback(async (data) => {
     const res = await authApi.register(data);
+    const registeredUser = res.data.user;
+    if (!registeredUser._id && registeredUser.id) registeredUser._id = registeredUser.id;
     localStorage.setItem('tms_token', res.data.token);
-    localStorage.setItem('tms_user', JSON.stringify(res.data.user));
-    setUser(res.data.user);
-    return res.data.user;
+    localStorage.setItem('tms_user', JSON.stringify(registeredUser));
+    setUser(registeredUser);
+    return registeredUser;
   }, []);
 
   const logout = useCallback(() => {
