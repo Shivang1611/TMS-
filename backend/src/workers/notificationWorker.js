@@ -75,7 +75,7 @@ const processJob = async (job) => {
           assignerName: task.createdBy?.name || 'An admin',
           taskTitle: task.title,
           departmentName: task.project?.department?.name || 'General',
-          taskUrl: `${baseUrl}/tasks/${task._id}`,
+          taskUrl: `${baseUrl}/my-tasks`,
           preferencesUrl: `${baseUrl}/settings/notifications`,
         }
       });
