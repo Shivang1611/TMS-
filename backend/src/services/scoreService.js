@@ -13,8 +13,15 @@ function getTier(score) {
 }
 
 function calculateTaskPoints(task) {
-  // If no due date, treat as on time
-  const onTime = task.dueDate ? (task.completedAt <= task.dueDate) : true;
+  let onTime = true;
+  if (task.dueDate) {
+    // dueDate from frontend usually comes as midnight UTC (e.g. 2026-08-18T00:00:00.000Z)
+    // We should treat any completion on that day as "on time". 
+    // Setting the due date comparison to the end of that day (23:59:59.999).
+    const endOfDueDate = new Date(task.dueDate);
+    endOfDueDate.setUTCHours(23, 59, 59, 999);
+    onTime = task.completedAt <= endOfDueDate;
+  }
   const noRework = !task.reworkNeeded;
 
   if (onTime && noRework) return { points: 15, reason: "on_time_no_rework" };
