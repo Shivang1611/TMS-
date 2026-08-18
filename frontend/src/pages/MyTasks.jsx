@@ -19,7 +19,9 @@ export default function MyTasks() {
   const [activeTaskId, setActiveTaskId] = useState(null);
   
   const isManager = ['Founder', 'Admin', 'Manager', 'Team Lead'].includes(user?.role);
-  const [viewMode, setViewMode] = useState('assignedToMe'); // 'assignedToMe' or 'assignedByMe'
+  const [viewMode, setViewMode] = useState(
+    ['Founder', 'Admin', 'Manager'].includes(user?.role) ? 'assignedByMe' : 'assignedToMe'
+  ); // 'assignedToMe' or 'assignedByMe'
 
   const queryClient = useQueryClient();
 

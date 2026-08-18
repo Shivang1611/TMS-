@@ -61,6 +61,9 @@ async function processTaskReopen(task) {
     return;
   }
 
+  const GRACE_PERIOD_MINUTES = 15;
+  const isGracePeriod = task.completedAt && (new Date() - new Date(task.completedAt)) < GRACE_PERIOD_MINUTES * 60000;
+
   for (const assigneeId of task.assignees) {
     // Find the last score log for this task and this assignee
     const lastLog = await TaskScoreLog.findOne({
@@ -77,7 +80,7 @@ async function processTaskReopen(task) {
         employee: assigneeId,
         task: task._id,
         pointsAwarded: -reversedPoints,
-        reason: "task_reopened_reversal",
+        reason: isGracePeriod ? "accidental_completion_reversal" : "task_reopened_reversal",
       });
 
       // Update user score
@@ -90,9 +93,57 @@ async function processTaskReopen(task) {
     }
   }
 
-  // Mark task as needing rework (it was reopened)
-  task.reworkNeeded = true;
+  if (!isGracePeriod) {
+    // Mark task as needing rework (it was reopened after grace period)
+    task.reworkNeeded = true;
+  }
   // The task save will be handled by the controller
+}
+
+async function recalculateTaskScore(task) {
+  if (task.status !== 'Done') return;
+  if (!task.assignees || task.assignees.length === 0) return;
+
+  const { points, reason } = calculateTaskPoints(task);
+  
+  for (const assigneeId of task.assignees) {
+    // Reversal of previous point grants
+    const previousLogs = await TaskScoreLog.find({
+      employee: assigneeId,
+      task: task._id,
+      pointsAwarded: { $ne: 0 }
+    });
+
+    let netAwarded = 0;
+    for (const log of previousLogs) {
+      netAwarded += log.pointsAwarded;
+    }
+
+    if (netAwarded !== points) {
+       const difference = points - netAwarded;
+       await TaskScoreLog.create({
+         employee: assigneeId,
+         task: task._id,
+         pointsAwarded: difference,
+         reason: "task_recalculated_" + reason,
+       });
+
+       const user = await User.findById(assigneeId);
+       if (user) {
+         user.score = Math.max(0, user.score + difference);
+         user.tier = getTier(user.score).name;
+         await user.save();
+       }
+    } else if (points === 0) {
+       // Log that a recalculation happened but no points changed
+       await TaskScoreLog.create({
+         employee: assigneeId,
+         task: task._id,
+         pointsAwarded: 0,
+         reason: "task_recalculated_" + reason,
+       });
+    }
+  }
 }
 
 module.exports = {
@@ -101,4 +152,5 @@ module.exports = {
   calculateTaskPoints,
   processTaskCompletion,
   processTaskReopen,
+  recalculateTaskScore,
 };

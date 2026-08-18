@@ -150,10 +150,20 @@ exports.updateTask = asyncHandler(async (req, res) => {
   if (!task) throw ApiError.notFound('Task');
   if (!canEditTask(req.user, task)) throw ApiError.forbidden('Insufficient permissions to edit this task');
 
+  const oldDueDate = task.dueDate ? new Date(task.dueDate).getTime() : null;
+
   for (const field of ['title', 'description', 'priority', 'milestone', 'dueDate', 'estimatedEffort', 'actualEffort', 'allowAssigneeToEdit']) {
     if (req.body[field] !== undefined) task[field] = req.body[field];
   }
+  
+  const newDueDate = task.dueDate ? new Date(task.dueDate).getTime() : null;
+  
   await task.save();
+
+  if (task.status === 'Done' && oldDueDate !== newDueDate) {
+    await scoreService.recalculateTaskScore(task);
+  }
+
   emitTaskUpdated(task);
   res.json({ success: true, data: task });
 });

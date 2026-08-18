@@ -186,7 +186,21 @@ export default function TaskCreate() {
               </label>
               <select
                 value={form.teamId}
-                onChange={(e) => setForm((f) => ({ ...f, teamId: e.target.value, assigneeIds: [] }))}
+                onChange={(e) => {
+                  const teamId = e.target.value;
+                  let newAssigneeIds = [];
+                  if (teamId) {
+                    const selectedTeam = availableTeams.find((t) => t._id === teamId);
+                    if (selectedTeam) {
+                      newAssigneeIds = availableUsers.filter((u) => {
+                        const isInTeam = u.teams?.some(t => t._id === selectedTeam._id || t === selectedTeam._id);
+                        const isTeamLead = selectedTeam.teamLeads?.some((tl) => tl._id === u._id || tl === u._id);
+                        return (isInTeam || isTeamLead) && u.isActive !== false;
+                      }).map(u => u._id);
+                    }
+                  }
+                  setForm((f) => ({ ...f, teamId, assigneeIds: newAssigneeIds }));
+                }}
                 className="input-field text-sm"
               >
                 <option value="">All Project Teams</option>
@@ -233,17 +247,25 @@ export default function TaskCreate() {
                 <User className="h-3 w-3" />
                 Assignee
               </label>
-              <select
-                multiple
-                value={form.assigneeIds}
-                onChange={(e) => setForm((f) => ({ ...f, assigneeIds: Array.from(e.target.selectedOptions, option => option.value) }))}
-                className="input-field text-sm min-h-[120px]"
-              >
+              <div className="input-field text-sm max-h-[160px] overflow-y-auto space-y-1 p-2">
                 {availableUsers.filter((u) => u.isActive !== false).map((u) => (
-                  <option key={u._id} value={u._id}>👤 {u.name} (⭐ {u.score || 0} | {u.role})</option>
+                  <label key={u._id} className="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-surface-50 rounded text-surface-700">
+                    <input
+                      type="checkbox"
+                      checked={form.assigneeIds.includes(u._id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setForm(f => ({ ...f, assigneeIds: [...f.assigneeIds, u._id] }));
+                        } else {
+                          setForm(f => ({ ...f, assigneeIds: f.assigneeIds.filter(id => id !== u._id) }));
+                        }
+                      }}
+                      className="rounded border-surface-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="truncate">👤 {u.name} (⭐ {u.score || 0} | {u.role})</span>
+                  </label>
                 ))}
-              </select>
-              <p className="text-[10px] text-surface-400 mt-1">Hold Cmd/Ctrl to select multiple</p>
+              </div>
               {form.assigneeIds.length > 0 && (
                 <label className="mt-2 flex items-center gap-2 text-xs text-surface-600 cursor-pointer">
                   <input

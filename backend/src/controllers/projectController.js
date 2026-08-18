@@ -49,7 +49,7 @@ exports.listProjects = asyncHandler(async (req, res) => {
     // Employee sees only projects they have tasks in
     filter._id = {
       $in: (await require('../models/Task').distinct('project', {
-        assignee: req.user._id,
+        assignees: req.user._id,
         isDeleted: false,
       })),
     };
@@ -63,7 +63,7 @@ exports.listProjects = asyncHandler(async (req, res) => {
     memberIds.push(req.user._id); // Include own tasks
     filter._id = {
       $in: (await require('../models/Task').distinct('project', {
-        assignee: { $in: memberIds },
+        assignees: { $in: memberIds },
         isDeleted: false,
       })),
     };

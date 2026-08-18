@@ -243,31 +243,44 @@ export default function TaskDetailModal({ taskId, onClose }) {
                 </button>
 
                 {showAssigneePicker && (
-                  <div className="absolute left-32 top-full z-30 mt-1 w-56 rounded-xl border border-surface-200 bg-white p-2 shadow-xl animate-fade-in">
-                    <p className="px-2 py-1 text-[10px] font-bold text-surface-400 uppercase">Select Assignee</p>
-                    <div className="max-h-48 overflow-y-auto space-y-1">
+                  <div className="absolute left-32 top-full z-30 mt-1 w-64 rounded-xl border border-surface-200 bg-white shadow-xl animate-fade-in flex flex-col">
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-surface-100">
+                      <p className="text-[10px] font-bold text-surface-400 uppercase">Select Assignees</p>
+                      <button 
+                        onClick={() => setShowAssigneePicker(false)}
+                        className="text-surface-400 hover:text-surface-600"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto p-1 space-y-0.5">
                       {allUsers.filter((u) => u.isActive).map((u) => {
                         const isAssigned = task.assignees?.some(a => a._id === u._id);
                         return (
-                          <button
+                          <label
                             key={u._id}
-                            onClick={() => {
-                              const currentIds = task.assignees?.map(a => a._id) || [];
-                              const newIds = isAssigned 
-                                ? currentIds.filter(id => id !== u._id) 
-                                : [...currentIds, u._id];
-                              assignMutation.mutate(newIds);
-                            }}
-                            className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-left transition-colors ${
-                              isAssigned ? 'bg-amber-100 text-amber-900 font-semibold' : 'hover:bg-surface-100 text-surface-700'
+                            className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors ${
+                              isAssigned ? 'bg-amber-50' : 'hover:bg-surface-50'
                             }`}
                           >
-                            <span className="flex h-5 w-5 items-center justify-center shrink-0 rounded-full bg-amber-200 text-[9px] font-bold">
+                            <input 
+                              type="checkbox"
+                              checked={isAssigned}
+                              onChange={(e) => {
+                                const currentIds = task.assignees?.map(a => a._id) || [];
+                                const newIds = e.target.checked 
+                                  ? [...currentIds, u._id]
+                                  : currentIds.filter(id => id !== u._id);
+                                assignMutation.mutate(newIds);
+                              }}
+                              className="rounded border-surface-300 text-primary-600 focus:ring-primary-500 w-3.5 h-3.5"
+                            />
+                            <span className="flex h-5 w-5 items-center justify-center shrink-0 rounded-full bg-amber-200 text-[9px] font-bold text-amber-900">
                               {getInitials(u.name)}
                             </span>
-                            <span className="truncate flex-1">{u.name}</span>
+                            <span className="truncate flex-1 text-surface-700 font-medium">{u.name}</span>
                             <ScoreBadge score={u.score || 0} />
-                          </button>
+                          </label>
                         );
                       })}
                     </div>

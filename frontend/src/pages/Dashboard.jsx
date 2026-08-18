@@ -528,12 +528,9 @@ export default function Dashboard() {
                   );
                 })
               ) : (
-                <div className="rounded-xl border border-surface-200 bg-white p-3.5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-6 w-6 rounded-md bg-purple-600 flex items-center justify-center text-xs font-bold text-white">M</div>
-                    <h4 className="text-xs font-bold text-surface-900 truncate">Mytutor</h4>
-                  </div>
-                  <p className="text-[10px] text-surface-400 font-medium">4 tasks • 8 teammates</p>
+                <div className="rounded-xl border border-dashed border-surface-200 bg-surface-50/50 p-4 text-center">
+                  <h4 className="text-xs font-bold text-surface-600">No Active Projects</h4>
+                  <p className="text-[10px] text-surface-400 mt-1">You are not assigned to any projects currently.</p>
                 </div>
               )}
             </div>
