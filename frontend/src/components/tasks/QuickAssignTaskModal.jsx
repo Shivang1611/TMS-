@@ -47,7 +47,7 @@ export default function QuickAssignTaskModal({ assigneeUser, team, onClose }) {
       title: title.trim(),
       description: description.trim() || undefined,
       priority,
-      assigneeId: assigneeUser?._id,
+      assigneeIds: assigneeUser?._id ? [assigneeUser._id] : undefined,
       dueDate: dueDate || null,
       estimatedEffort: estimatedEffort ? parseFloat(estimatedEffort) : undefined,
     });

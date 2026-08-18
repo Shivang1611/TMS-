@@ -53,20 +53,24 @@ async function notifyTaskAssigned({ task, assigneeId, actorId, actorName, taskTi
 }
 
 /**
- * Create a status_changed notification for the task's assignee.
+ * Create a status_changed notification for the task's assignees.
  */
 async function notifyStatusChanged({ task, oldStatus, newStatus, actorId, actorName, taskTitle }) {
-  if (!task.assignee || task.assignee.toString() === actorId?.toString()) return;
+  if (!task.assignees || task.assignees.length === 0) return;
 
-  await createAndEmitNotification({
-    type: 'status_changed',
-    recipient: task.assignee,
-    actor: actorId,
-    entityType: 'Task',
-    entityId: task._id,
-    title: `Task status updated: ${taskTitle}`,
-    message: `${actorName} changed "${taskTitle}" from ${oldStatus} to ${newStatus}`,
-  });
+  for (const assigneeId of task.assignees) {
+    if (assigneeId.toString() === actorId?.toString()) continue;
+
+    await createAndEmitNotification({
+      type: 'status_changed',
+      recipient: assigneeId,
+      actor: actorId,
+      entityType: 'Task',
+      entityId: task._id,
+      title: `Task status updated: ${taskTitle}`,
+      message: `${actorName} changed "${taskTitle}" from ${oldStatus} to ${newStatus}`,
+    });
+  }
 }
 
 /**

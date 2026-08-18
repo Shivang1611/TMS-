@@ -12,7 +12,7 @@ const { queueTaskNotification, cancelTaskNotifications } = require('../services/
  */
 exports.createTask = asyncHandler(async (req, res) => {
   const { projectId } = req.params;
-  const { milestoneId, assigneeId, parentTaskId, ...taskData } = req.body;
+  const { milestoneId, assigneeIds, parentTaskId, ...taskData } = req.body;
 
   const project = await Project.findOne({
     _id: projectId,
@@ -31,25 +31,27 @@ exports.createTask = asyncHandler(async (req, res) => {
     title: taskData.title,
     project: projectId,
     milestone: milestoneId || undefined,
-    assignee: assigneeId || undefined,
+    assignees: Array.isArray(assigneeIds) ? assigneeIds : (assigneeIds ? [assigneeIds] : []),
     createdBy: req.user._id,
     parentTask: parentTaskId || undefined,
   });
 
   emitTaskUpdated(task);
 
-  // Notify assignee about the new task
-  if (assigneeId) {
-    notifyTaskAssigned({
-      task,
-      assigneeId,
-      actorId: req.user._id,
-      actorName: req.user.name,
-      taskTitle: task.title,
-    });
-    
-    // Queue background email notification asynchronously
-    queueTaskNotification(task._id, assigneeId, 'task_created').catch(err => console.error(err));
+  // Notify assignees about the new task
+  if (task.assignees && task.assignees.length > 0) {
+    for (const id of task.assignees) {
+      notifyTaskAssigned({
+        task,
+        assigneeId: id,
+        actorId: req.user._id,
+        actorName: req.user.name,
+        taskTitle: task.title,
+      });
+      
+      // Queue background email notification asynchronously
+      queueTaskNotification(task._id, id, 'task_created').catch(err => console.error(err));
+    }
   }
 
   res.status(201).json({ success: true, data: task });
@@ -61,12 +63,13 @@ exports.createTask = asyncHandler(async (req, res) => {
  */
 exports.listTasks = asyncHandler(async (req, res) => {
   const filter = { isDeleted: false };
-  const { projectId, milestoneId, assigneeId, createdBy, status, priority, dueDateFrom, dueDateTo,
+  const { projectId, milestoneId, assigneeId, assigneeIds, createdBy, status, priority, dueDateFrom, dueDateTo,
     page = 1, pageSize = 20, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
 
   if (projectId) filter.project = projectId;
   if (milestoneId) filter.milestone = milestoneId;
-  if (assigneeId) filter.assignee = assigneeId;
+  if (assigneeId) filter.assignees = assigneeId;
+  if (assigneeIds) filter.assignees = { $in: Array.isArray(assigneeIds) ? assigneeIds : [assigneeIds] };
   if (createdBy) filter.createdBy = createdBy;
   if (status) filter.status = status;
   if (priority) filter.priority = priority;
@@ -77,12 +80,12 @@ exports.listTasks = asyncHandler(async (req, res) => {
   }
 
   if (req.user.role === 'Employee') {
-    filter.assignee = req.user._id;
+    filter.assignees = req.user._id;
   } else if (req.user.role === 'Team Lead') {
     const teamMembers = await require('../models/User').find({ teams: { $in: req.user.teams }, isDeleted: false });
     const memberIds = teamMembers.map((m) => m._id);
     memberIds.push(req.user._id);
-    filter.assignee = { $in: memberIds };
+    filter.assignees = { $in: memberIds };
   }
 
   const skip = (parseInt(page, 10) - 1) * parseInt(pageSize, 10);
@@ -92,7 +95,7 @@ exports.listTasks = asyncHandler(async (req, res) => {
 
   const [tasks, totalCount] = await Promise.all([
     Task.find(filter)
-      .populate('assignee', 'name email role profile.jobTitle')
+      .populate('assignees', 'name email role profile.jobTitle')
       .populate('createdBy', 'name email role profile.jobTitle')
       .populate('milestone', 'name')
       .populate('project', 'name')
@@ -119,7 +122,7 @@ exports.listTasksByProject = asyncHandler(async (req, res) => {
  */
 exports.getTask = asyncHandler(async (req, res) => {
   const task = await Task.findOne({ _id: req.params.id, isDeleted: false })
-    .populate('assignee', 'name email role profile.jobTitle')
+    .populate('assignees', 'name email role profile.jobTitle')
     .populate('createdBy', 'name email role profile.jobTitle')
     .populate('milestone', 'name status')
     .populate('project', 'name')
@@ -304,12 +307,12 @@ exports.updateTaskStatus = asyncHandler(async (req, res) => {
  * Assign or reassign a task
  */
 exports.assignTask = asyncHandler(async (req, res) => {
-  const { assigneeId } = req.body;
+  const { assigneeIds } = req.body;
   const task = await Task.findOne({ _id: req.params.id, isDeleted: false });
   if (!task) throw ApiError.notFound('Task');
 
-  if (!assigneeId) {
-    task.assignee = undefined;
+  if (!assigneeIds || (Array.isArray(assigneeIds) && assigneeIds.length === 0)) {
+    task.assignees = [];
     await task.save();
     emitTaskUpdated(task);
     
@@ -320,26 +323,28 @@ exports.assignTask = asyncHandler(async (req, res) => {
   }
 
   const User = require('../models/User');
-  const user = await User.findOne({ _id: assigneeId, organization: req.user.organization, isDeleted: false, isActive: true });
-  if (!user) throw ApiError.badRequest('User is not a member of this organization or is inactive');
+  const ids = Array.isArray(assigneeIds) ? assigneeIds : [assigneeIds];
+  const users = await User.find({ _id: { $in: ids }, organization: req.user.organization, isDeleted: false, isActive: true });
+  if (users.length !== ids.length) throw ApiError.badRequest('One or more users are not members of this organization or are inactive');
 
-  task.assignee = assigneeId;
+  task.assignees = ids;
   await task.save();
   emitTaskUpdated(task);
 
-  // Notify the new assignee
-  notifyTaskAssigned({
-    task,
-    assigneeId,
-    actorId: req.user._id,
-    actorName: req.user.name,
-    taskTitle: task.title,
-  });
+  // Cancel existing notifications
+  cancelTaskNotifications(task._id, 'task_created').catch(err => console.error(err));
 
-  // Re-queue background email notification
-  cancelTaskNotifications(task._id, 'task_created')
-    .then(() => queueTaskNotification(task._id, assigneeId, 'task_created'))
-    .catch(err => console.error(err));
+  // Notify the new assignees
+  for (const id of ids) {
+    notifyTaskAssigned({
+      task,
+      assigneeId: id,
+      actorId: req.user._id,
+      actorName: req.user.name,
+      taskTitle: task.title,
+    });
+    queueTaskNotification(task._id, id, 'task_created').catch(err => console.error(err));
+  }
 
   res.json({ success: true, data: task, message: 'Task assigned successfully' });
 });
@@ -350,7 +355,7 @@ exports.assignTask = asyncHandler(async (req, res) => {
  */
 exports.getSubtasks = asyncHandler(async (req, res) => {
   const subtasks = await Task.find({ parentTask: req.params.id, isDeleted: false })
-    .populate('assignee', 'name email').sort({ createdAt: 1 });
+    .populate('assignees', 'name email').sort({ createdAt: 1 });
   res.json({ success: true, data: subtasks });
 });
 
@@ -360,7 +365,7 @@ function canEditTask(user, task) {
   if (['Founder', 'Admin'].includes(user.role)) return true;
   if (user.role === 'Manager') return true;
   if (user.role === 'Team Lead') return user.teams && user.teams.length > 0;
-  if (task.assignee && task.assignee.toString() === user._id.toString() && task.allowAssigneeToEdit) return true;
+  if (task.assignees && task.assignees.some(a => a.toString() === user._id.toString()) && task.allowAssigneeToEdit) return true;
   return false;
 }
 
@@ -374,17 +379,19 @@ function canDeleteTask(user, task) {
 exports.canAccessTask = async function(user, task) {
   if (['Founder', 'Admin', 'Manager'].includes(user.role)) return true;
   
-  const isAssignee = task.assignee && task.assignee.toString() === user._id.toString();
+  const isAssignee = task.assignees && task.assignees.some(a => a.toString() === user._id.toString());
   const isCreator = task.createdBy && task.createdBy.toString() === user._id.toString();
   
   if (isAssignee || isCreator) return true;
 
-  if (user.role === 'Team Lead' && task.assignee) {
+  if (user.role === 'Team Lead' && task.assignees && task.assignees.length > 0) {
     const User = require('../models/User');
-    const assignee = await User.findById(task.assignee);
-    if (assignee && assignee.teams && user.teams) {
-      const sharedTeams = assignee.teams.filter(t => user.teams.some(ut => ut.toString() === t.toString()));
-      if (sharedTeams.length > 0) return true;
+    const assignees = await User.find({ _id: { $in: task.assignees } });
+    for (const assignee of assignees) {
+      if (assignee && assignee.teams && user.teams) {
+        const sharedTeams = assignee.teams.filter(t => user.teams.some(ut => ut.toString() === t.toString()));
+        if (sharedTeams.length > 0) return true;
+      }
     }
   }
 

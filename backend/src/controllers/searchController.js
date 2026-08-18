@@ -28,9 +28,9 @@ exports.search = asyncHandler(async (req, res) => {
     taskFilter.project = { $in: orgProjects };
 
     const tasks = await Task.find(taskFilter, { score: { $meta: 'textScore' } })
-      .select('title description status priority project assignee dueDate')
+      .select('title description status priority project assignees dueDate')
       .populate('project', 'name')
-      .populate('assignee', 'name email')
+      .populate('assignees', 'name email')
       .sort({ score: { $meta: 'textScore' } })
       .limit(pageSize)
       .skip((page - 1) * pageSize);

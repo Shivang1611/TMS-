@@ -36,7 +36,7 @@ export default function MyTasks() {
   const { data, isLoading } = useQuery({
     queryKey: ['my-tasks', user?._id, viewMode],
     queryFn: () => taskApi.list({ 
-      ...(viewMode === 'assignedToMe' ? { assigneeId: user?._id } : { createdBy: user?._id }),
+      ...(viewMode === 'assignedToMe' ? { assigneeIds: user?._id } : { createdBy: user?._id }),
       pageSize: 500 
     }),
     enabled: !!user?._id,
@@ -258,7 +258,7 @@ export default function MyTasks() {
                 <tr>
                   <th className="px-6 py-4">Task Name</th>
                   {viewMode === 'assignedByMe' && (
-                    <th className="px-6 py-4 w-40">Assignee</th>
+                    <th className="px-6 py-4 w-40">Assignees</th>
                   )}
                   <th className="px-6 py-4 w-40">Due Date</th>
                   <th className="px-6 py-4 w-40">Status</th>
@@ -290,7 +290,9 @@ export default function MyTasks() {
                       </td>
                       {viewMode === 'assignedByMe' && (
                         <td className="px-6 py-4 text-surface-700 font-medium whitespace-nowrap">
-                          {t.assignee?.name || 'Unassigned'}
+                          {t.assignees && t.assignees.length > 0 
+                            ? t.assignees.map(a => a.name).join(', ') 
+                            : 'Unassigned'}
                         </td>
                       )}
                       <td className="px-6 py-4 text-surface-600 whitespace-nowrap">

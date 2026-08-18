@@ -37,7 +37,7 @@ exports.taskCompletionReport = asyncHandler(async (req, res) => {
   };
 
   if (projectId) matchStage['project'] = new (require('mongoose').Types.ObjectId)(projectId);
-  if (assigneeId) matchStage['assignee'] = new (require('mongoose').Types.ObjectId)(assigneeId);
+  if (assigneeId) matchStage['assignees'] = new (require('mongoose').Types.ObjectId)(assigneeId);
 
   // Group by status for summary
   const statusSummary = await Task.aggregate([
@@ -63,7 +63,7 @@ exports.taskCompletionReport = asyncHandler(async (req, res) => {
   // Fetch detailed tasks list with populated createdBy (Assigner), assignee, and project
   const filterQuery = { isDeleted: false, ...periodMatch };
   if (projectId) filterQuery.project = projectId;
-  if (assigneeId) filterQuery.assignee = assigneeId;
+  if (assigneeId) filterQuery.assignees = assigneeId;
 
   // Filter tasks belonging to user's org
   const orgProjects = await Project.find({ organization: req.user.organization, isDeleted: false }).select('_id');
@@ -72,7 +72,7 @@ exports.taskCompletionReport = asyncHandler(async (req, res) => {
 
   const detailedTasks = await Task.find(filterQuery)
     .populate('createdBy', 'name email role score profile.jobTitle')
-    .populate('assignee', 'name email role score profile.jobTitle')
+    .populate('assignees', 'name email role score profile.jobTitle')
     .populate('project', 'name')
     .sort({ createdAt: -1 })
     .limit(100);
@@ -87,7 +87,7 @@ exports.taskCompletionReport = asyncHandler(async (req, res) => {
       ...taskObj,
       durationHours,
       assignedBy: t.createdBy ? t.createdBy.name : 'System/Unspecified',
-      assignedTo: t.assignee ? t.assignee.name : 'Unassigned',
+      assignedTo: t.assignees && t.assignees.length > 0 ? t.assignees.map(a => a.name).join(', ') : 'Unassigned',
     };
   });
 
@@ -125,10 +125,11 @@ exports.workloadReport = asyncHandler(async (req, res) => {
     },
     { $unwind: '$projectInfo' },
     { $match: { 'projectInfo.organization': req.user.organization, isDeleted: false } },
-    { $match: { assignee: { $ne: null } } },
+    { $unwind: '$assignees' },
+    { $match: { assignees: { $ne: null } } },
     {
       $group: {
-        _id: { assignee: '$assignee', status: '$status' },
+        _id: { assignee: '$assignees', status: '$status' },
         count: { $sum: 1 },
       },
     },

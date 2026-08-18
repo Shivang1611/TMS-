@@ -34,11 +34,11 @@ const taskSchema = new mongoose.Schema(
       ref: 'Milestone',
       index: true,
     },
-    assignee: {
+    assignees: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       index: true,
-    },
+    }],
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -105,8 +105,8 @@ const taskSchema = new mongoose.Schema(
 // Indexes for filtering, sorting, and search
 taskSchema.index({ project: 1, status: 1 });
 taskSchema.index({ project: 1, milestone: 1 });
-taskSchema.index({ assignee: 1, status: 1 });
-taskSchema.index({ assignee: 1, dueDate: 1 });
+taskSchema.index({ assignees: 1, status: 1 });
+taskSchema.index({ assignees: 1, dueDate: 1 });
 taskSchema.index({ createdBy: 1 });
 taskSchema.index({ priority: 1, status: 1 });
 taskSchema.index({ dueDate: 1 });

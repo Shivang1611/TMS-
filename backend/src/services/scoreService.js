@@ -23,56 +23,63 @@ function calculateTaskPoints(task) {
 }
 
 async function processTaskCompletion(task) {
-  if (!task.assignee) return;
+  if (!task.assignees || task.assignees.length === 0) return;
 
   const { points, reason } = calculateTaskPoints(task);
   
-  // Log the points
-  await TaskScoreLog.create({
-    employee: task.assignee,
-    task: task._id,
-    pointsAwarded: points,
-    reason,
-  });
+  for (const assigneeId of task.assignees) {
+    // Log the points
+    await TaskScoreLog.create({
+      employee: assigneeId,
+      task: task._id,
+      pointsAwarded: points,
+      reason,
+    });
 
-  // Update user score
-  if (points > 0) {
-    const user = await User.findById(task.assignee);
-    if (user) {
-      user.score += points;
-      user.tier = getTier(user.score).name;
-      await user.save();
+    // Update user score
+    if (points > 0) {
+      const user = await User.findById(assigneeId);
+      if (user) {
+        user.score += points;
+        user.tier = getTier(user.score).name;
+        await user.save();
+      }
     }
   }
 }
 
 async function processTaskReopen(task) {
-  if (!task.assignee) return;
+  if (!task.assignees || task.assignees.length === 0) {
+    task.reworkNeeded = true;
+    return;
+  }
 
-  // Find the last score log for this task and this assignee
-  const lastLog = await TaskScoreLog.findOne({
-    employee: task.assignee,
-    task: task._id,
-    pointsAwarded: { $gt: 0 }
-  }).sort({ createdAt: -1 });
-
-  let reversedPoints = 0;
-  if (lastLog) {
-    reversedPoints = lastLog.pointsAwarded;
-    // Log the reversal
-    await TaskScoreLog.create({
-      employee: task.assignee,
+  for (const assigneeId of task.assignees) {
+    // Find the last score log for this task and this assignee
+    const lastLog = await TaskScoreLog.findOne({
+      employee: assigneeId,
       task: task._id,
-      pointsAwarded: -reversedPoints,
-      reason: "task_reopened_reversal",
-    });
+      pointsAwarded: { $gt: 0 }
+    }).sort({ createdAt: -1 });
 
-    // Update user score
-    const user = await User.findById(task.assignee);
-    if (user) {
-      user.score = Math.max(0, user.score - reversedPoints);
-      user.tier = getTier(user.score).name;
-      await user.save();
+    let reversedPoints = 0;
+    if (lastLog) {
+      reversedPoints = lastLog.pointsAwarded;
+      // Log the reversal
+      await TaskScoreLog.create({
+        employee: assigneeId,
+        task: task._id,
+        pointsAwarded: -reversedPoints,
+        reason: "task_reopened_reversal",
+      });
+
+      // Update user score
+      const user = await User.findById(assigneeId);
+      if (user) {
+        user.score = Math.max(0, user.score - reversedPoints);
+        user.tier = getTier(user.score).name;
+        await user.save();
+      }
     }
   }
 

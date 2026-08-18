@@ -142,10 +142,17 @@ export default function TaskTable({ tasks, sortBy, sortOrder, onSort, selectedId
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-[9px] font-semibold text-primary-700">
-                      {getInitials(task.assignee?.name)}
-                    </div>
-                    <span className="text-sm text-surface-600">{task.assignee?.name || 'Unassigned'}</span>
+                    {task.assignees && task.assignees.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {task.assignees.map(a => (
+                          <span key={a._id} className="inline-flex items-center gap-1 rounded-md bg-amber-100/90 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                            {a.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-surface-600">Unassigned</span>
+                    )}
                   </div>
                 </td>
                 <td className="px-4 py-3">

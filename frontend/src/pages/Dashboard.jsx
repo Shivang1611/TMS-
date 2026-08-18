@@ -138,7 +138,7 @@ export default function Dashboard() {
 
   // Group tasks by status for My Tasks widget
   const myTasks = allTasks.filter(
-    (t) => !t.assignee || t.assignee?._id === user?._id || t.assignee === user?._id
+    (t) => (!t.assignees || t.assignees.length === 0) || t.assignees.some(a => a._id === user?._id || a === user?._id)
   );
   const displayTasks = myTasks.length > 0 ? myTasks : allTasks;
 

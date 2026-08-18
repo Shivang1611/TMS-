@@ -97,7 +97,7 @@ function emitTaskUpdated(task) {
     taskId: task._id,
     projectId: task.project,
     status: task.status,
-    assignee: task.assignee,
+    assignees: task.assignees,
     updatedAt: task.updatedAt || new Date(),
   };
 

@@ -10,7 +10,7 @@ export default function MasterTaskTracker({ tasks = [], users = [], selectedUser
 
   // Filter tasks by selected user if set
   const filteredTasks = selectedUser
-    ? tasks.filter((t) => t.assignee?._id === selectedUser || t.assignee === selectedUser)
+    ? tasks.filter((t) => t.assignees?.some(a => a._id === selectedUser) || t.assignees?.includes(selectedUser))
     : tasks;
 
 
@@ -201,10 +201,14 @@ export default function MasterTaskTracker({ tasks = [], users = [], selectedUser
 
                       {/* Employee Tag */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        {t.assignee?.name ? (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-100/90 px-2.5 py-0.5 text-[11px] font-semibold text-amber-900 border border-amber-200/60">
-                            {t.assignee.name}
-                          </span>
+                        {t.assignees && t.assignees.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {t.assignees.map(a => (
+                              <span key={a._id || a} className="inline-flex items-center gap-1 rounded-md bg-amber-100/90 px-2.5 py-0.5 text-[11px] font-semibold text-amber-900 border border-amber-200/60">
+                                {a.name || 'Assigned'}
+                              </span>
+                            ))}
+                          </div>
                         ) : (
                           <span className="text-surface-400 italic">Unassigned</span>
                         )}

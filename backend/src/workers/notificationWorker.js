@@ -32,7 +32,7 @@ const processJob = async (job) => {
       return;
     }
 
-    if (!task.assignee || task.assignee.toString() !== job.recipientUserId.toString()) {
+    if (!task.assignees || !task.assignees.some(a => a.toString() === job.recipientUserId.toString())) {
       job.status = 'cancelled';
       job.lastError = 'Task was reassigned before sending';
       await job.save();

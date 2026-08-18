@@ -63,13 +63,26 @@ export default function TaskCard({ task }) {
       </div>
 
       <div className="mt-3 flex items-center gap-3">
-        {/* Assignee */}
-        {task.assignee ? (
-          <div className="flex items-center gap-1.5" title={task.assignee.name}>
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold text-primary-700">
-              {getInitials(task.assignee.name)}
-            </div>
-            <span className="text-xs text-surface-500 truncate max-w-[100px]">{task.assignee.name}</span>
+        {/* Assignees */}
+        {task.assignees && task.assignees.length > 0 ? (
+          <div className="flex items-center -space-x-1.5" title={task.assignees.map(a => a.name).join(', ')}>
+            {task.assignees.slice(0, 3).map((assignee, idx) => (
+              <div 
+                key={assignee._id}
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 border border-white text-[10px] font-semibold text-primary-700"
+                style={{ zIndex: 10 - idx }}
+              >
+                {getInitials(assignee.name)}
+              </div>
+            ))}
+            {task.assignees.length > 3 && (
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-100 border border-white text-[10px] font-semibold text-surface-600 z-0">
+                +{task.assignees.length - 3}
+              </div>
+            )}
+            <span className="ml-2 text-xs text-surface-500 truncate max-w-[80px]">
+              {task.assignees.length === 1 ? task.assignees[0].name : `${task.assignees.length} assigned`}
+            </span>
           </div>
         ) : (
           <span className="text-xs text-surface-400 italic">Unassigned</span>

@@ -57,7 +57,7 @@ exports.orgDashboard = asyncHandler(async (req, res) => {
       isDeleted: false,
     })
       .populate('createdBy', 'name email role profile.jobTitle')
-      .populate('assignee', 'name email role profile.jobTitle')
+      .populate('assignees', 'name email role profile.jobTitle')
       .populate('project', 'name')
       .sort({ createdAt: -1 })
       .limit(12),
@@ -82,7 +82,7 @@ exports.orgDashboard = asyncHandler(async (req, res) => {
           ...obj,
           durationHours,
           assignedBy: t.createdBy ? t.createdBy.name : 'Admin',
-          assignedTo: t.assignee ? t.assignee.name : 'Unassigned',
+          assignedTo: t.assignees && t.assignees.length > 0 ? t.assignees.map(a => a.name).join(', ') : 'Unassigned',
         };
       }),
     },
@@ -151,10 +151,10 @@ exports.teamDashboard = asyncHandler(async (req, res) => {
   teamMembers.push(req.user._id);
 
   const tasks = await Task.find({
-    assignee: { $in: teamMembers },
+    assignees: { $in: teamMembers },
     isDeleted: false,
   })
-    .populate('assignee', 'name email')
+    .populate('assignees', 'name email')
     .populate('project', 'name')
     .sort({ dueDate: 1 })
     .limit(20);
@@ -211,10 +211,11 @@ exports.workloadDashboard = asyncHandler(async (req, res) => {
     },
     { $unwind: '$projectInfo' },
     { $match: { 'projectInfo.organization': new mongoose.Types.ObjectId(orgId), isDeleted: false } },
-    { $match: { assignee: { $in: userIds } } },
+    { $unwind: '$assignees' },
+    { $match: { assignees: { $in: userIds } } },
     {
       $group: {
-        _id: { assignee: '$assignee', status: '$status' },
+        _id: { assignee: '$assignees', status: '$status' },
         count: { $sum: 1 },
       },
     },
@@ -263,18 +264,18 @@ exports.personalDashboard = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
   const [assignedTasks, overdueTasks, completedThisWeek, recentNotifications] = await Promise.all([
-    Task.find({ assignee: userId, isDeleted: false, status: { $ne: 'Done' } })
+    Task.find({ assignees: userId, isDeleted: false, status: { $ne: 'Done' } })
       .populate('project', 'name')
       .populate('milestone', 'name')
       .sort({ priority: -1, dueDate: 1 }),
     Task.countDocuments({
-      assignee: userId,
+      assignees: userId,
       dueDate: { $lt: new Date() },
       status: { $ne: 'Done' },
       isDeleted: false,
     }),
     Task.countDocuments({
-      assignee: userId,
+      assignees: userId,
       status: 'Done',
       completedAt: { $gte: new Date(Date.now() - 7 * 86400000) },
       isDeleted: false,
@@ -284,7 +285,7 @@ exports.personalDashboard = asyncHandler(async (req, res) => {
 
   const taskStats = {
     total: assignedTasks.length + (await Task.countDocuments({
-      assignee: userId,
+      assignees: userId,
       status: 'Done',
       isDeleted: false,
     })),

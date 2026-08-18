@@ -44,7 +44,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
   const task = data?.data;
 
   const isManager = user?.role === 'Founder' || user?.role === 'Manager' || user?.role === 'Team Leader';
-  const canEdit = isManager || (task?.assignee?._id === user?._id && task?.allowAssigneeToEdit);
+  const canEdit = isManager || (task?.assignees?.some(a => a._id === user?._id) && task?.allowAssigneeToEdit);
 
   useEffect(() => {
     if (task) {
@@ -119,12 +119,12 @@ export default function TaskDetailModal({ taskId, onClose }) {
   }, [descDraft, isDescDirty]);
 
   const assignMutation = useMutation({
-    mutationFn: (assigneeId) => taskApi.assign(taskId, { assigneeId: assigneeId || undefined }),
+    mutationFn: (assigneeIds) => taskApi.assign(taskId, { assigneeIds }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      setShowAssigneePicker(false);
-      toast.success('Assignee updated');
+      // Keep picker open to allow multiple selections
+      toast.success('Assignees updated');
     },
   });
 
@@ -237,34 +237,45 @@ export default function TaskDetailModal({ taskId, onClose }) {
                   onClick={() => setShowAssigneePicker(!showAssigneePicker)}
                   className="inline-flex items-center gap-1.5 rounded-md bg-amber-100/90 px-2.5 py-0.5 text-xs font-semibold text-amber-900 hover:bg-amber-200 transition-colors"
                 >
-                  {task.assignee?.name || 'Unassigned'}
+                  {task.assignees && task.assignees.length > 0 
+                    ? task.assignees.map(a => a.name).join(', ') 
+                    : 'Unassigned'}
                 </button>
 
                 {showAssigneePicker && (
                   <div className="absolute left-32 top-full z-30 mt-1 w-56 rounded-xl border border-surface-200 bg-white p-2 shadow-xl animate-fade-in">
                     <p className="px-2 py-1 text-[10px] font-bold text-surface-400 uppercase">Select Assignee</p>
                     <div className="max-h-48 overflow-y-auto space-y-1">
-                      {allUsers.filter((u) => u.isActive).map((u) => (
-                        <button
-                          key={u._id}
-                          onClick={() => assignMutation.mutate(u._id)}
-                          className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-left transition-colors ${
-                            task.assignee?._id === u._id ? 'bg-amber-100 text-amber-900 font-semibold' : 'hover:bg-surface-100 text-surface-700'
-                          }`}
-                        >
-                          <span className="flex h-5 w-5 items-center justify-center shrink-0 rounded-full bg-amber-200 text-[9px] font-bold">
-                            {getInitials(u.name)}
-                          </span>
-                          <span className="truncate flex-1">{u.name}</span>
-                          <ScoreBadge score={u.score || 0} />
-                        </button>
-                      ))}
+                      {allUsers.filter((u) => u.isActive).map((u) => {
+                        const isAssigned = task.assignees?.some(a => a._id === u._id);
+                        return (
+                          <button
+                            key={u._id}
+                            onClick={() => {
+                              const currentIds = task.assignees?.map(a => a._id) || [];
+                              const newIds = isAssigned 
+                                ? currentIds.filter(id => id !== u._id) 
+                                : [...currentIds, u._id];
+                              assignMutation.mutate(newIds);
+                            }}
+                            className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-left transition-colors ${
+                              isAssigned ? 'bg-amber-100 text-amber-900 font-semibold' : 'hover:bg-surface-100 text-surface-700'
+                            }`}
+                          >
+                            <span className="flex h-5 w-5 items-center justify-center shrink-0 rounded-full bg-amber-200 text-[9px] font-bold">
+                              {getInitials(u.name)}
+                            </span>
+                            <span className="truncate flex-1">{u.name}</span>
+                            <ScoreBadge score={u.score || 0} />
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
               </div>
 
-              {isManager && task.assignee && (
+              {isManager && task.assignees && task.assignees.length > 0 && (
                 <div className="flex items-center gap-4">
                   <div className="w-28" />
                   <label className="flex items-center gap-2 text-[10px] text-surface-500 cursor-pointer hover:text-surface-700 transition-colors">

@@ -30,7 +30,7 @@ export default function TaskCreate() {
 
   const [form, setForm] = useState({
     projectId: projectId || '', teamId: teamId || '', title: '', description: '', priority: 'Medium',
-    assigneeId: assigneeId || '', dueDate: '', estimatedEffort: '', allowAssigneeToEdit: false,
+    assigneeIds: assigneeId ? [assigneeId] : [], dueDate: '', estimatedEffort: '', allowAssigneeToEdit: false,
   });
 
   const { data: projectsData } = useQuery({
@@ -77,7 +77,7 @@ export default function TaskCreate() {
       title: form.title,
       description: form.description || undefined,
       priority: form.priority,
-      assigneeId: form.assigneeId || undefined,
+      assigneeIds: form.assigneeIds.length > 0 ? form.assigneeIds : undefined,
       dueDate: form.dueDate || null,
       estimatedEffort: form.estimatedEffort ? parseFloat(form.estimatedEffort) : undefined,
       allowAssigneeToEdit: form.allowAssigneeToEdit,
@@ -96,12 +96,14 @@ export default function TaskCreate() {
   // Selected Team object
   const selectedTeam = teams.find((t) => t._id === form.teamId);
 
-  // Filter assignees based on selected Team or Project members
+  // Filter assignees based on selected Team
   const availableUsers = selectedTeam
-    ? allUsers.filter((u) => u.teams?.includes(selectedTeam._id) || selectedTeam.teamLeads?.some((tl) => tl._id === u._id))
-    : selectedProject && selectedProject.members && selectedProject.members.length > 0
-      ? selectedProject.members
-      : allUsers;
+    ? allUsers.filter((u) => {
+        const isInTeam = u.teams?.some(t => t._id === selectedTeam._id || t === selectedTeam._id);
+        const isTeamLead = selectedTeam.teamLeads?.some((tl) => tl._id === u._id || tl === u._id);
+        return isInTeam || isTeamLead;
+      })
+    : allUsers;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -122,7 +124,7 @@ export default function TaskCreate() {
             <span className="text-xs font-medium text-surface-400 uppercase tracking-wider">Project</span>
             <select
               value={form.projectId}
-              onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value, teamId: '', assigneeId: '' }))}
+              onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value, teamId: '', assigneeIds: [] }))}
               className="flex-1 border-0 bg-transparent text-sm font-medium text-surface-700 focus:ring-0 cursor-pointer"
               required
             >
@@ -184,7 +186,7 @@ export default function TaskCreate() {
               </label>
               <select
                 value={form.teamId}
-                onChange={(e) => setForm((f) => ({ ...f, teamId: e.target.value, assigneeId: '' }))}
+                onChange={(e) => setForm((f) => ({ ...f, teamId: e.target.value, assigneeIds: [] }))}
                 className="input-field text-sm"
               >
                 <option value="">All Project Teams</option>
@@ -232,16 +234,17 @@ export default function TaskCreate() {
                 Assignee
               </label>
               <select
-                value={form.assigneeId}
-                onChange={(e) => setForm((f) => ({ ...f, assigneeId: e.target.value }))}
-                className="input-field text-sm"
+                multiple
+                value={form.assigneeIds}
+                onChange={(e) => setForm((f) => ({ ...f, assigneeIds: Array.from(e.target.selectedOptions, option => option.value) }))}
+                className="input-field text-sm min-h-[120px]"
               >
-                <option value="">Unassigned</option>
                 {availableUsers.filter((u) => u.isActive !== false).map((u) => (
                   <option key={u._id} value={u._id}>👤 {u.name} (⭐ {u.score || 0} | {u.role})</option>
                 ))}
               </select>
-              {form.assigneeId && (
+              <p className="text-[10px] text-surface-400 mt-1">Hold Cmd/Ctrl to select multiple</p>
+              {form.assigneeIds.length > 0 && (
                 <label className="mt-2 flex items-center gap-2 text-xs text-surface-600 cursor-pointer">
                   <input
                     type="checkbox"
