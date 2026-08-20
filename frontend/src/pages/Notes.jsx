@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { noteApi } from '../api/api';
+import { noteApi, taskApi } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import NoteEditor from '../components/notes/NoteEditor';
-import { Search, Plus, FileText, Clock, Pin, Trash2, Link as LinkIcon, Unlink } from 'lucide-react';
+import { Search, Plus, FileText, Clock, Pin, Trash2, Link as LinkIcon, Unlink, X } from 'lucide-react';
 import { formatDate } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
@@ -13,6 +13,7 @@ export default function Notes() {
   const [activeTab, setActiveTab] = useState('My Notes');
   const [search, setSearch] = useState('');
   const [selectedNoteId, setSelectedNoteId] = useState(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
   // Queries
   const { data: myNotesData, isLoading: loadingMyNotes } = useQuery({
@@ -180,12 +181,7 @@ export default function Notes() {
               {activeTab === 'My Notes' && (
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => {
-                      const taskId = window.prompt('Enter Task ID to link (or clear to unlink):', selectedNote.linkedTaskId || '');
-                      if (taskId !== null) {
-                        linkMutation.mutate({ id: selectedNote._id, taskId: taskId || null });
-                      }
-                    }}
+                    onClick={() => setIsTaskModalOpen(true)}
                     className={`btn-secondary text-xs px-2 py-1 flex items-center gap-1.5 ${selectedNote.linkedTaskId ? 'bg-blue-50 text-blue-700 border-blue-200' : ''}`}
                     title={selectedNote.linkedTaskId ? "Linked to task. Click to edit/unlink." : "Link to a task"}
                   >
@@ -235,6 +231,16 @@ export default function Notes() {
           </div>
         )}
       </div>
+      {selectedNote && (
+        <TaskSelectModal
+          isOpen={isTaskModalOpen}
+          onClose={() => setIsTaskModalOpen(false)}
+          onSelect={(taskId) => {
+            linkMutation.mutate({ id: selectedNote._id, taskId: taskId });
+            setIsTaskModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -265,5 +271,75 @@ function NoteTitleInput({ noteId, initialTitle, readOnly, onSave }) {
       className="text-xl font-bold text-surface-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0 w-1/2"
       placeholder="Note Title"
     />
+  );
+}
+
+function TaskSelectModal({ isOpen, onClose, onSelect }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const { data, isLoading } = useQuery({
+    queryKey: ['tasks', 'modalList'],
+    queryFn: () => taskApi.list({ pageSize: 50, page: 1 }),
+    enabled: isOpen,
+  });
+
+  if (!isOpen) return null;
+  const tasks = data?.data || [];
+  const filteredTasks = tasks.filter(t => t.title?.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
+        <div className="p-4 border-b border-surface-200 flex justify-between items-center bg-surface-50">
+          <h3 className="font-bold text-surface-900">Select Task to Link</h3>
+          <button onClick={onClose} className="text-surface-400 hover:text-surface-900">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        
+        <div className="p-4 border-b border-surface-200">
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-surface-400" />
+            <input
+              type="text"
+              autoFocus
+              placeholder="Search tasks by title..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-field pl-9 w-full h-9 text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-2 min-h-[200px]">
+          {isLoading ? (
+            <div className="p-4 text-center text-sm text-surface-500">Loading tasks...</div>
+          ) : filteredTasks.length === 0 ? (
+            <div className="p-4 text-center text-sm text-surface-500">No tasks found.</div>
+          ) : (
+            <div className="space-y-1">
+              {filteredTasks.map(task => (
+                <button
+                  key={task._id}
+                  onClick={() => onSelect(task._id)}
+                  className="w-full text-left p-3 hover:bg-primary-50 rounded-lg transition-colors border border-transparent hover:border-primary-100"
+                >
+                  <div className="font-medium text-sm text-surface-900">{task.title}</div>
+                  <div className="text-xs text-surface-500 mt-1 truncate">
+                    Project: {task.project?.name || 'N/A'}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        <div className="p-4 border-t border-surface-200 bg-surface-50">
+           <button onClick={() => onSelect(null)} className="w-full btn-secondary py-2 text-sm text-red-600 hover:bg-red-50">
+              Clear Current Link
+           </button>
+        </div>
+      </div>
+    </div>
   );
 }
