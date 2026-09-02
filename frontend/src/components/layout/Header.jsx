@@ -5,7 +5,7 @@ import { useDarkMode } from '../../context/DarkModeContext';
 import { Search, Bell, LogOut, User, Menu, Moon, Sun } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { notificationApi } from '../../api/api';
-import { getInitials } from '../../utils/helpers';
+import { getInitials, getImageUrl } from '../../utils/helpers';
 
 export default function Header({ onMenuClick }) {
   const { user, logout } = useAuth();
@@ -43,8 +43,10 @@ export default function Header({ onMenuClick }) {
     }
   };
 
+  const headerAvatarSrc = getImageUrl(user?.profile?.avatar);
+
   return (
-    <header className="flex h-16 items-center gap-4 border-b border-surface-200 bg-white px-4 lg:px-6">
+    <header className="flex h-16 items-center gap-4 border-b border-surface-200 bg-white px-4 lg:px-6 w-full min-w-0">
       {/* Mobile menu button */}
       <button onClick={onMenuClick} className="btn-ghost lg:hidden">
         <Menu className="h-5 w-5" />
@@ -86,9 +88,17 @@ export default function Header({ onMenuClick }) {
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="btn-ghost flex items-center gap-2 rounded-full p-1"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700">
-              {getInitials(user?.name)}
-            </div>
+            {headerAvatarSrc ? (
+              <img
+                src={headerAvatarSrc}
+                alt={user?.name}
+                className="h-8 w-8 rounded-full object-cover shadow-sm"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700">
+                {getInitials(user?.name)}
+              </div>
+            )}
           </button>
 
           {showUserMenu && (

@@ -42,7 +42,7 @@ export default function Sidebar({ collapsed, onToggle }) {
     <aside
       className={`${
         collapsed ? 'w-16' : 'w-64'
-      } flex flex-col border-r border-surface-200 bg-white transition-all duration-300`}
+      } flex flex-col h-full border-r border-surface-200 bg-white transition-all duration-300`}
     >
       {/* Header / Logo */}
       <div className={`flex h-16 relative items-center border-b border-surface-200 ${collapsed ? 'justify-center px-0' : 'justify-between px-4'}`}>

@@ -103,21 +103,21 @@ export default function Tasks() {
   return (
     <div className="space-y-6 font-sans">
       {/* ─── Interactive Breadcrumb Bar ───────────────────────────────── */}
-      <div className="flex items-center justify-between border-b border-surface-200 pb-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-surface-600">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-surface-200 pb-3">
+        <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-surface-600">
           <button
             onClick={() => { setSelectedProjectId(null); setSelectedTeamId(null); setSelectedAssigneeUser(null); setViewMode('workspaces'); localStorage.setItem('taskViewMode', 'workspaces'); }}
-            className={`hover:text-surface-900 transition-colors ${!selectedProjectId && !selectedTeamId && !selectedAssigneeUser && viewMode === 'workspaces' ? 'text-surface-900 font-bold' : ''}`}
+            className={`hover:text-surface-900 transition-colors whitespace-nowrap ${!selectedProjectId && !selectedTeamId && !selectedAssigneeUser && viewMode === 'workspaces' ? 'text-surface-900 font-bold' : ''}`}
           >
             Tasks & Workspaces
           </button>
 
           {selectedProject && (
             <>
-              <span>/</span>
+              <span className="text-surface-400">/</span>
               <button
                 onClick={() => { setSelectedTeamId(null); setSelectedAssigneeUser(null); }}
-                className={`hover:text-surface-900 transition-colors ${selectedProjectId && !selectedTeamId && !selectedAssigneeUser ? 'text-surface-900 font-bold' : ''}`}
+                className={`hover:text-surface-900 transition-colors whitespace-nowrap ${selectedProjectId && !selectedTeamId && !selectedAssigneeUser ? 'text-surface-900 font-bold' : ''}`}
               >
                 Project: {selectedProject.name}
               </button>
@@ -126,10 +126,10 @@ export default function Tasks() {
 
           {selectedTeam && (
             <>
-              <span>/</span>
+              <span className="text-surface-400">/</span>
               <button
                 onClick={() => setSelectedAssigneeUser(null)}
-                className={`hover:text-surface-900 transition-colors ${selectedTeamId && !selectedAssigneeUser ? 'text-surface-900 font-bold' : ''}`}
+                className={`hover:text-surface-900 transition-colors whitespace-nowrap ${selectedTeamId && !selectedAssigneeUser ? 'text-surface-900 font-bold' : ''}`}
               >
                 Team: {selectedTeam.name}
               </button>
@@ -138,15 +138,15 @@ export default function Tasks() {
 
           {selectedEmployeeUser && (
             <>
-              <span>/</span>
-              <span className="text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-bold">
+              <span className="text-surface-400">/</span>
+              <span className="text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-bold whitespace-nowrap">
                 👤 {selectedEmployeeUser.name}
               </span>
             </>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {canCreate && (
             <button onClick={() => navigate('/tasks/new')} className="btn-primary">
               <Plus className="h-4 w-4" /> New Task

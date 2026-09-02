@@ -298,9 +298,9 @@ export default function Reports() {
           </div>
 
           {tab === 'tasks' && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 mt-2 sm:mt-0">
               {/* Period Selector Filter */}
-              <div className="flex rounded-lg bg-surface-100 p-1 border border-surface-200 text-xs font-medium">
+              <div className="flex overflow-x-auto max-w-full rounded-lg bg-surface-100 p-1 border border-surface-200 text-xs font-medium scrollbar-hide">
                 {[
                   { id: 'all', label: 'All Time' },
                   { id: 'daily', label: 'Daily (Today)' },
@@ -350,7 +350,7 @@ export default function Reports() {
 
       {/* Tab navigation */}
       {!trackerModalUserId && (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {tabs.map((t) => {
             const Icon = t.icon;
             return (
@@ -408,9 +408,9 @@ export default function Reports() {
               </div>
 
               {/* Charts & Status breakdown grid */}
-              <div className="grid gap-6 lg:grid-cols-3">
+              <div className="grid gap-6 lg:grid-cols-3 min-w-0 w-full">
                 {/* Pie chart */}
-                <div className="card">
+                <div className="card min-w-0">
                   <h3 className="text-sm font-semibold text-surface-900 mb-4">Tasks by Status</h3>
                   <ResponsiveContainer width="100%" height={260}>
                     <PieChart>
@@ -603,7 +603,7 @@ export default function Reports() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="overflow-hidden rounded-xl border border-surface-200 bg-white">
+              <div className="overflow-x-auto rounded-xl border border-surface-200 bg-white">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-surface-200 bg-surface-50">

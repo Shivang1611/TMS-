@@ -191,7 +191,7 @@ export default function Dashboard() {
 
   return (
     <div 
-      className="space-y-6 font-sans text-surface-900 bg-surface-50/30 p-2 rounded-3xl min-h-screen transition-colors duration-500"
+      className="space-y-6 font-sans text-surface-900 bg-surface-50/30 p-2 rounded-3xl min-h-screen transition-colors duration-500 w-full min-w-0"
       style={{ '--tier-color': scoreDetails?.color || '#e5e7eb' }}
     >
       {/* ─── Top Header Section ────────────────────────────────────────── */}
@@ -202,7 +202,7 @@ export default function Dashboard() {
 
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <h1 className="text-3xl font-extrabold text-surface-900 tracking-tight">
                 Hello, {user?.name?.split(' ')[0] || 'User'}
               </h1>
@@ -246,9 +246,9 @@ export default function Dashboard() {
       </div>
 
       {/* ─── Main 2-Column Grid Layout ─────────────────────────────────── */}
-      <div className="grid gap-6 lg:grid-cols-12 items-start">
+      <div className="grid gap-6 lg:grid-cols-12 items-start min-w-0">
         {/* ─── Left Column (7 Cols) ─────────────────────────────────────── */}
-        <div className="space-y-6 lg:col-span-7">
+        <div className="space-y-6 lg:col-span-7 min-w-0">
           {/* Widget 1: Roles & Responsibilities Badge Card */}
           <div 
             className="rounded-3xl border border-surface-200 bg-white shadow-sm relative overflow-hidden group"
@@ -256,8 +256,8 @@ export default function Dashboard() {
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundColor: 'var(--tier-color)' }} />
             
             <div className="relative z-10 p-6 space-y-3">
-              <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <Shield className="h-5 w-5 text-surface-900" />
                 <h3 className="text-sm font-bold text-surface-900">
                   {user?.role} Operational Responsibilities
@@ -290,8 +290,8 @@ export default function Dashboard() {
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundColor: 'var(--tier-color)' }} />
             
             <div className="relative z-10 p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-surface-100/50 pb-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between border-b border-surface-100/50 pb-3 gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
                   <CheckSquare className="h-4 w-4 text-blue-600" />
                 </div>
@@ -438,8 +438,8 @@ export default function Dashboard() {
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundColor: 'var(--tier-color)' }} />
             
             <div className="relative z-10 p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-surface-100/50 pb-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between border-b border-surface-100/50 pb-3 gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <div className="h-8 w-8 rounded-full bg-pink-100 flex items-center justify-center">
                   <Target className="h-4 w-4 text-pink-600" />
                 </div>
@@ -469,7 +469,7 @@ export default function Dashboard() {
         </div>
 
         {/* ─── Right Column (5 Cols) ────────────────────────────────────── */}
-        <div className="space-y-6 lg:col-span-5">
+        <div className="space-y-6 lg:col-span-5 min-w-0">
           {/* Widget 4: Projects Mini Grid */}
           <div 
             className="rounded-3xl border border-surface-200 bg-white shadow-sm relative overflow-hidden group"
@@ -477,8 +477,8 @@ export default function Dashboard() {
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundColor: 'var(--tier-color)' }} />
             
             <div className="relative z-10 p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-surface-100/50 pb-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between border-b border-surface-100/50 pb-3 gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
                   <FolderKanban className="h-4 w-4 text-emerald-600" />
                 </div>
@@ -544,8 +544,8 @@ export default function Dashboard() {
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundColor: 'var(--tier-color)' }} />
             
             <div className="relative z-10 p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-surface-100/50 pb-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between border-b border-surface-100/50 pb-3 gap-2">
+              <div className="flex flex-wrap items-center gap-2 min-w-0">
                 <CalendarIcon className="h-5 w-5 text-blue-500" />
                 <h3 className="text-base font-bold text-surface-900">Calendar</h3>
               </div>
@@ -601,8 +601,8 @@ export default function Dashboard() {
 
             {/* Workable Event Card for Selected Date */}
             <div className="rounded-xl border border-surface-200 bg-surface-50/60 p-4 space-y-3 min-h-[200px]">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-bold text-surface-900">Reminders for this day</h4>
+              <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
+                <h4 className="text-sm font-bold text-surface-900 min-w-0">Reminders for this day</h4>
                 <button
                   onClick={() => setShowAddReminder(!showAddReminder)}
                   className="btn-primary text-[10px] py-1 px-2 inline-flex items-center gap-1"
@@ -695,8 +695,8 @@ export default function Dashboard() {
             <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundColor: 'var(--tier-color)' }} />
             
             <div className="relative z-10 p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-surface-100/50 pb-3">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between border-b border-surface-100/50 pb-3 gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
                     <Trophy className="h-4 w-4 text-amber-600" />
                   </div>

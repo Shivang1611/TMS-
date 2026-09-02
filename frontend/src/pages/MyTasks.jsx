@@ -128,12 +128,12 @@ export default function MyTasks() {
   return (
     <div className="space-y-6 font-sans">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-surface-200 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-surface-200 pb-4">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg shrink-0">
             {user?.name?.[0] || 'M'}
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold text-surface-900">My tasks</h1>
             <p className="text-sm text-surface-500">
               {viewMode === 'assignedToMe' 
@@ -144,16 +144,16 @@ export default function MyTasks() {
         </div>
 
         {isManager && (
-          <div className="flex bg-surface-100 p-1 rounded-lg shrink-0">
+          <div className="flex bg-surface-100 p-1 rounded-lg shrink-0 overflow-x-auto w-full sm:w-auto">
             <button 
               onClick={() => setViewMode('assignedToMe')}
-              className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${viewMode === 'assignedToMe' ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700'}`}
+              className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${viewMode === 'assignedToMe' ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700'}`}
             >
               Assigned to Me
             </button>
             <button 
               onClick={() => setViewMode('assignedByMe')}
-              className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${viewMode === 'assignedByMe' ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700'}`}
+              className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${viewMode === 'assignedByMe' ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700'}`}
             >
               Assigned by Me
             </button>
@@ -162,7 +162,7 @@ export default function MyTasks() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-6 border-b border-surface-200 text-sm font-semibold">
+      <div className="flex gap-6 border-b border-surface-200 text-sm font-semibold overflow-x-auto whitespace-nowrap scrollbar-hide">
         {['List', 'Board', 'Calendar', 'Dashboard', 'Files'].map(tab => (
           <button
             key={tab}
@@ -264,6 +264,7 @@ export default function MyTasks() {
                   )}
                   <th className="px-6 py-4 w-40">Due Date</th>
                   <th className="px-6 py-4 w-40">Status</th>
+                  <th className="px-6 py-4 w-32">Points</th>
                   <th className="px-6 py-4 w-48">Project</th>
                   <th className="px-6 py-4 w-12"></th>
                 </tr>
@@ -271,7 +272,7 @@ export default function MyTasks() {
               <tbody className="divide-y divide-surface-100 bg-white">
                 {tasks.length === 0 ? (
                   <tr>
-                    <td colSpan={viewMode === 'assignedByMe' ? 5 : 4} className="px-6 py-12 text-center text-surface-400 italic">
+                    <td colSpan={viewMode === 'assignedByMe' ? 6 : 5} className="px-6 py-12 text-center text-surface-400 italic">
                       {viewMode === 'assignedToMe' 
                         ? 'You have no assigned tasks. Enjoy your day!' 
                         : "You haven't assigned any tasks to others yet."}
@@ -325,6 +326,15 @@ export default function MyTasks() {
                             <span className="h-1.5 w-1.5 rounded-full bg-surface-500" />
                             To Do
                           </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap font-semibold">
+                        {t.status === 'Done' ? (
+                          <span className={(viewMode === 'assignedToMe' ? t.myEarnedPoints : t.earnedPoints) >= 15 ? 'text-emerald-600' : (viewMode === 'assignedToMe' ? t.myEarnedPoints : t.earnedPoints) > 0 ? 'text-blue-600' : 'text-surface-400'}>
+                            {(viewMode === 'assignedToMe' ? t.myEarnedPoints : t.earnedPoints) !== undefined ? `${viewMode === 'assignedToMe' ? t.myEarnedPoints : t.earnedPoints} pts` : '0 pts'}
+                          </span>
+                        ) : (
+                          <span className="text-surface-300">—</span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-surface-500 truncate max-w-[200px]">

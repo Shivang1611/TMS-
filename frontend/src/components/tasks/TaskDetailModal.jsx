@@ -44,7 +44,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
   const task = data?.data;
 
   const isManager = user?.role === 'Founder' || user?.role === 'Manager' || user?.role === 'Team Leader';
-  const canEdit = isManager || (task?.assignees?.some(a => a._id === user?._id) && task?.allowAssigneeToEdit);
+  const canEdit = isManager || (task?.assignees?.some(a => a._id === user?._id) && task?.allowAssigneeToEdit && task?.status !== 'Done');
 
   useEffect(() => {
     if (task) {

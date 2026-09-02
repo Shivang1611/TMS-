@@ -105,8 +105,36 @@ exports.listTasks = asyncHandler(async (req, res) => {
     Task.countDocuments(filter),
   ]);
 
+  const taskIds = tasks.map((t) => t._id);
+  const TaskScoreLog = require('../models/TaskScoreLog');
+  const scoreLogs = await TaskScoreLog.find({ task: { $in: taskIds } });
+
+  const pointsMap = {};
+  scoreLogs.forEach((log) => {
+    const taskIdStr = log.task.toString();
+    const empIdStr = log.employee.toString();
+    if (!pointsMap[taskIdStr]) pointsMap[taskIdStr] = {};
+    if (!pointsMap[taskIdStr][empIdStr]) pointsMap[taskIdStr][empIdStr] = 0;
+    pointsMap[taskIdStr][empIdStr] += log.pointsAwarded;
+  });
+
+  const tasksWithPoints = tasks.map((t) => {
+    const taskObj = t.toJSON();
+    const taskIdStr = t._id.toString();
+    
+    let total = 0;
+    if (pointsMap[taskIdStr]) {
+      Object.values(pointsMap[taskIdStr]).forEach((p) => (total += p));
+    }
+    taskObj.earnedPoints = total;
+    taskObj.earnedPointsMap = pointsMap[taskIdStr] || {};
+    taskObj.myEarnedPoints = pointsMap[taskIdStr]?.[req.user._id.toString()] || 0;
+
+    return taskObj;
+  });
+
   res.json({
-    success: true, data: tasks,
+    success: true, data: tasksWithPoints,
     pagination: { page: parseInt(page, 10), pageSize: limit, totalCount, totalPages: Math.ceil(totalCount / limit) },
   });
 });
@@ -375,7 +403,10 @@ function canEditTask(user, task) {
   if (['Founder', 'Admin'].includes(user.role)) return true;
   if (user.role === 'Manager') return true;
   if (user.role === 'Team Lead') return user.teams && user.teams.length > 0;
-  if (task.assignees && task.assignees.some(a => a.toString() === user._id.toString()) && task.allowAssigneeToEdit) return true;
+  if (task.assignees && task.assignees.some(a => a.toString() === user._id.toString()) && task.allowAssigneeToEdit) {
+    if (task.status === 'Done') return false;
+    return true;
+  }
   return false;
 }
 

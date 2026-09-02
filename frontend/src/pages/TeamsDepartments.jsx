@@ -95,13 +95,14 @@ export default function TeamsDepartments() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-surface-200 pb-4">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-surface-900">Organization Structure</h1>
           <p className="mt-1 text-sm text-surface-500">{departments.length} department(s) • {allTeams.length} team(s)</p>
         </div>
         {isAdmin && (
-          <button onClick={() => setShowCreateDept(true)} className="btn-primary">
+          <button onClick={() => setShowCreateDept(true)} className="btn-primary shrink-0 w-full sm:w-auto justify-center">
             <Plus className="h-4 w-4" /> Add Department
           </button>
         )}
@@ -399,14 +400,14 @@ function TeamRow({ teamId, initialTeam, allUsers, isAdmin, queryClient }) {
         className="flex items-center justify-between p-3 cursor-pointer hover:bg-surface-50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-center gap-2">
-          {isExpanded ? <ChevronDown className="h-4 w-4 text-surface-400" /> : <ChevronRight className="h-4 w-4 text-surface-400" />}
-          <Users className="h-4 w-4 text-surface-400" />
-          <span className="text-sm font-bold text-surface-900">{team.name}</span>
-          <span className="text-xs text-surface-400 font-medium">({members.length} member(s))</span>
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 min-w-0 flex-1 pr-2">
+          {isExpanded ? <ChevronDown className="h-4 w-4 text-surface-400 shrink-0" /> : <ChevronRight className="h-4 w-4 text-surface-400 shrink-0" />}
+          <Users className="h-4 w-4 text-surface-400 shrink-0" />
+          <span className="text-sm font-bold text-surface-900 truncate" title={team.name}>{team.name}</span>
+          <span className="text-xs text-surface-400 font-medium whitespace-nowrap shrink-0">({members.length} member(s))</span>
         </div>
         {isAdmin && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <button 
               onClick={(e) => {
                 e.stopPropagation();
@@ -493,16 +494,16 @@ function TeamRow({ teamId, initialTeam, allUsers, isAdmin, queryClient }) {
 
           {/* Add member dropdown */}
           {showAdd && (
-            <div className="mt-2 flex gap-2">
+            <div className="mt-3 flex gap-2">
               <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}
-                className="input-field h-8 text-xs flex-1">
+                className="input-field py-1.5 text-sm flex-1 min-w-0">
                 <option value="">Select user...</option>
                 {nonMembers.map((u) => (
                   <option key={u._id} value={u._id}>{u.name} ({u.role})</option>
                 ))}
               </select>
               <button onClick={() => { if (selectedUser) addMemberMutation.mutate(selectedUser); }}
-                disabled={!selectedUser} className="btn-primary h-8 text-xs px-3">Add</button>
+                disabled={!selectedUser} className="btn-primary py-1.5 px-4 text-sm shrink-0">Add</button>
             </div>
           )}
         </div>
