@@ -12,27 +12,73 @@ function getTier(score) {
   return tierConfig.find(t => score >= t.min);
 }
 
-function calculateTaskPoints(task) {
+const SCOPE_POINTS = {
+  'Quick': 5,
+  'Half Day': 10,
+  'Full Day': 20,
+  'Multi-Day': 35,
+};
+
+const PRIORITY_MULTIPLIER = {
+  'Critical': 1.4,
+  'High': 1.2,
+  'Medium': 1.0,
+  'Low': 0.8,
+};
+
+const RATING_MULTIPLIER = {
+  'Outstanding': 1.2,
+  'Good': 1.0,
+  'Needs Polish': 0.75,
+};
+
+function calculateTaskPoints(task, overrides = {}) {
+  // 1. Direct manual admin override if specified
+  if (overrides.customMarks !== undefined && overrides.customMarks !== null && overrides.customMarks !== '' && !isNaN(Number(overrides.customMarks))) {
+    const points = Math.max(0, Math.round(Number(overrides.customMarks)));
+    return { points, reason: `custom_override_${points}_pts` };
+  }
+
+  // 2. Determine work scope: explicitly passed -> task property -> effort-based fallback -> 'Half Day' default
+  let workScope = overrides.workScope || task.workScope;
+  if (!workScope || !SCOPE_POINTS[workScope]) {
+    if (task.estimatedEffort >= 6) workScope = 'Full Day';
+    else if (task.estimatedEffort > 0 && task.estimatedEffort <= 2) workScope = 'Quick';
+    else workScope = 'Half Day';
+  }
+
+  const basePoints = SCOPE_POINTS[workScope] || 10;
+  const priorityMult = PRIORITY_MULTIPLIER[task.priority] || 1.0;
+  
+  const adminRating = overrides.adminRating || task.adminRating || 'Good';
+  const ratingMult = RATING_MULTIPLIER[adminRating] || 1.0;
+
+  // 3. Timeliness evaluation
   let onTime = true;
   if (task.dueDate) {
-    // dueDate from frontend usually comes as midnight UTC (e.g. 2026-08-18T00:00:00.000Z)
-    // We should treat any completion on that day as "on time". 
-    // Setting the due date comparison to the end of that day (23:59:59.999).
     const endOfDueDate = new Date(task.dueDate);
     endOfDueDate.setUTCHours(23, 59, 59, 999);
-    onTime = task.completedAt <= endOfDueDate;
+    const completionDate = task.completedAt || new Date();
+    onTime = completionDate <= endOfDueDate;
   }
-  const noRework = !task.reworkNeeded;
 
-  if (onTime && noRework) return { points: 15, reason: "on_time_no_rework" };
-  if (onTime && !noRework) return { points: 5, reason: "on_time_rework" };
-  return { points: 0, reason: "late" };
+  // 30% penalty if completed late (instead of 0 points), so partial credit is preserved
+  const timelinessMult = onTime ? 1.0 : 0.7;
+  const reworkMult = task.reworkNeeded ? 0.8 : 1.0;
+
+  const rawCalculated = basePoints * priorityMult * ratingMult * timelinessMult * reworkMult;
+  const points = Math.max(1, Math.round(rawCalculated));
+
+  const reason = `${workScope.toLowerCase().replace(/\s+/g, '_')}_${(task.priority || 'medium').toLowerCase()}_${adminRating.toLowerCase().replace(/\s+/g, '_')}${onTime ? '' : '_late'}`;
+
+  return { points, reason };
 }
 
-async function processTaskCompletion(task) {
+async function processTaskCompletion(task, overrides = {}) {
   if (!task.assignees || task.assignees.length === 0) return;
 
-  const { points, reason } = calculateTaskPoints(task);
+  const { points, reason } = calculateTaskPoints(task, overrides);
+  task.pointsAwarded = points;
   
   for (const assigneeId of task.assignees) {
     // Log the points

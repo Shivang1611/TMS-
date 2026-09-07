@@ -180,7 +180,7 @@ exports.updateTask = asyncHandler(async (req, res) => {
 
   const oldDueDate = task.dueDate ? new Date(task.dueDate).getTime() : null;
 
-  for (const field of ['title', 'description', 'priority', 'milestone', 'dueDate', 'estimatedEffort', 'actualEffort', 'allowAssigneeToEdit']) {
+  for (const field of ['title', 'description', 'priority', 'milestone', 'dueDate', 'estimatedEffort', 'actualEffort', 'allowAssigneeToEdit', 'workScope', 'adminRating']) {
     if (req.body[field] !== undefined) task[field] = req.body[field];
   }
   
@@ -188,7 +188,7 @@ exports.updateTask = asyncHandler(async (req, res) => {
   
   await task.save();
 
-  if (task.status === 'Done' && oldDueDate !== newDueDate) {
+  if (task.status === 'Done' && (oldDueDate !== newDueDate || req.body.workScope !== undefined || req.body.adminRating !== undefined || req.body.priority !== undefined)) {
     await scoreService.recalculateTaskScore(task);
   }
 
@@ -237,9 +237,15 @@ exports.bulkUpdateStatus = asyncHandler(async (req, res) => {
       
       if (status === 'Done') {
         task.completedAt = new Date();
-        await scoreService.processTaskCompletion(task);
+        if (req.body.workScope) task.workScope = req.body.workScope;
+        if (req.body.adminRating) task.adminRating = req.body.adminRating;
+        await scoreService.processTaskCompletion(task, {
+          workScope: req.body.workScope,
+          adminRating: req.body.adminRating,
+        });
       } else if (oldStatus === 'Done') {
         // Task reopened from Done
+        task.pointsAwarded = 0;
         await scoreService.processTaskReopen(task);
       }
       
@@ -316,8 +322,16 @@ exports.updateTaskStatus = asyncHandler(async (req, res) => {
   
   if (status === 'Done') {
     task.completedAt = new Date();
-    await scoreService.processTaskCompletion(task);
+    if (req.body.workScope) task.workScope = req.body.workScope;
+    if (req.body.adminRating) task.adminRating = req.body.adminRating;
+    const overrides = {
+      workScope: req.body.workScope,
+      adminRating: req.body.adminRating,
+      customMarks: req.body.customMarks,
+    };
+    await scoreService.processTaskCompletion(task, overrides);
   } else if (oldStatus === 'Done') {
+    task.pointsAwarded = 0;
     await scoreService.processTaskReopen(task);
   }
   

@@ -87,6 +87,20 @@ const taskSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    workScope: {
+      type: String,
+      enum: ['Quick', 'Half Day', 'Full Day', 'Multi-Day'],
+      default: 'Half Day',
+    },
+    adminRating: {
+      type: String,
+      enum: ['Outstanding', 'Good', 'Needs Polish'],
+      default: 'Good',
+    },
+    pointsAwarded: {
+      type: Number,
+      default: 0,
+    },
     isDeleted: {
       type: Boolean,
       default: false,
