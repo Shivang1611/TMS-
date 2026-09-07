@@ -5,7 +5,7 @@ import { taskApi, projectApi, userApi, teamApi } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import {
   ArrowLeft, Flag, User, Calendar, Loader2, Plus,
-  AlignLeft, Clock, Users,
+  AlignLeft, Clock, Users, Briefcase,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -30,6 +30,7 @@ export default function TaskCreate() {
 
   const [form, setForm] = useState({
     projectId: projectId || '', teamId: teamId || '', title: '', description: '', priority: 'Medium',
+    workScope: 'Half Day',
     assigneeIds: assigneeId ? [assigneeId] : [], dueDate: '', estimatedEffort: '', allowAssigneeToEdit: false,
   });
 
@@ -77,6 +78,7 @@ export default function TaskCreate() {
       title: form.title,
       description: form.description || undefined,
       priority: form.priority,
+      workScope: form.workScope,
       assigneeIds: form.assigneeIds.length > 0 ? form.assigneeIds : undefined,
       dueDate: form.dueDate || null,
       estimatedEffort: form.estimatedEffort ? parseFloat(form.estimatedEffort) : undefined,
@@ -236,6 +238,41 @@ export default function TaskCreate() {
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            <div className="h-px bg-surface-100" />
+
+            {/* Work Scope (Half Day vs Full Day) */}
+            <div>
+              <label className="mb-1.5 flex items-center justify-between text-xs font-medium text-surface-500">
+                <span className="flex items-center gap-1.5">
+                  <Briefcase className="h-3 w-3" />
+                  Work Scope
+                </span>
+                <span className="text-[10px] text-surface-400">Determines base marks</span>
+              </label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { id: 'Half Day', label: 'Half Day', pts: '10 pts' },
+                  { id: 'Full Day', label: 'Full Day', pts: '20 pts' },
+                  { id: 'Quick', label: 'Quick Task', pts: '5 pts' },
+                  { id: 'Multi-Day', label: 'Multi-Day', pts: '35 pts' },
+                ].map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, workScope: s.id }))}
+                    className={`rounded-lg border px-2 py-1.5 text-xs text-left font-medium transition-all ${
+                      form.workScope === s.id
+                        ? 'bg-primary-50 border-primary-400 text-primary-900 ring-1 ring-primary-400'
+                        : 'border-surface-200 text-surface-600 hover:border-surface-300 hover:bg-surface-50'
+                    }`}
+                  >
+                    <div className="font-semibold">{s.label}</div>
+                    <div className="text-[10px] opacity-70">{s.pts}</div>
+                  </button>
+                ))}
               </div>
             </div>
 

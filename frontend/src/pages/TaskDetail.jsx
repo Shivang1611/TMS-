@@ -8,12 +8,13 @@ import {
   ArrowLeft, Clock, User, Calendar, Flag, GitBranch,
   MessageSquare, Send, Trash2, CheckCircle2,
   Paperclip, Upload, FileText, File, AlertCircle,
-  ChevronRight, Check, X as XIcon, Loader2, ExternalLink
+  ChevronRight, Check, X as XIcon, Loader2, ExternalLink, Award, Briefcase,
 } from 'lucide-react';
 import { formatDate, getInitials, priorityConfig, statusConfig } from '../utils/helpers';
 import ImageGallery from '../components/images/ImageGallery';
 import toast from 'react-hot-toast';
 import { lazy, Suspense } from 'react';
+import TaskDoneModal from '../components/tasks/TaskDoneModal';
 
 const NotionEditor = lazy(() => import('../components/editor/NotionEditor'));
 
@@ -44,6 +45,7 @@ export default function TaskDetail() {
   const [descDraft, setDescDraft] = useState('');
   const [isDescDirty, setIsDescDirty] = useState(false);
   const [showBlockedModal, setShowBlockedModal] = useState(false);
+  const [showDoneModal, setShowDoneModal] = useState(false);
   const [blockedReason, setBlockedReason] = useState('');
   const [showAssigneePicker, setShowAssigneePicker] = useState(false);
   const fileInputRef = useRef(null);
@@ -176,6 +178,16 @@ export default function TaskDetail() {
     onError: (err) => toast.error(err.response?.data?.message || 'Failed to update access'),
   });
 
+  const updateScopeMutation = useMutation({
+    mutationFn: (newScope) => taskApi.update(id, { workScope: newScope }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Work scope updated');
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed to update scope'),
+  });
+
   useEffect(() => {
     if (isDescDirty && task && descDraft !== task.description) {
       const timer = setTimeout(() => {
@@ -253,6 +265,8 @@ export default function TaskDetail() {
                   if (isBlockedAction) {
                     setShowBlockedModal(true);
                     setBlockedReason('');
+                  } else if (isDoneAction && isManager) {
+                    setShowDoneModal(true);
                   } else {
                     statusMutation.mutate({ status: s });
                   }
@@ -372,6 +386,53 @@ export default function TaskDetail() {
               {task.blockedReason || (task.estimatedEffort ? `${task.estimatedEffort}h est.` : 'Empty')}
             </div>
           </div>
+
+          {/* Work Scope */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 w-32 text-surface-400 font-medium">
+              <Briefcase className="h-4 w-4" />
+              Scope
+            </div>
+            <div>
+              {isManager ? (
+                <select
+                  value={task.workScope || 'Half Day'}
+                  onChange={(e) => updateScopeMutation.mutate(e.target.value)}
+                  disabled={updateScopeMutation.isPending}
+                  className="appearance-none rounded-full px-3 py-1 text-xs font-semibold bg-surface-100 text-surface-800 border border-surface-200 cursor-pointer focus:outline-none hover:bg-surface-200 transition-colors"
+                >
+                  <option value="Half Day">Half Day (10 pts)</option>
+                  <option value="Full Day">Full Day (20 pts)</option>
+                  <option value="Quick">Quick Task (5 pts)</option>
+                  <option value="Multi-Day">Multi-Day (35 pts)</option>
+                </select>
+              ) : (
+                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-surface-100 text-surface-700">
+                  {task.workScope || 'Half Day'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Marks Awarded (if Done) */}
+          {task.status === 'Done' && (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 w-32 text-surface-400 font-medium">
+                <Award className="h-4 w-4 text-emerald-600" />
+                Marks Awarded
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  +{task.pointsAwarded || 0} pts
+                </span>
+                {task.adminRating && (
+                  <span className="text-[11px] text-surface-500 font-medium">
+                    • {task.adminRating}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 w-32 text-surface-400 font-medium">
@@ -610,6 +671,20 @@ export default function TaskDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {showDoneModal && (
+        <TaskDoneModal
+          isOpen={showDoneModal}
+          onClose={() => setShowDoneModal(false)}
+          task={task}
+          isPending={statusMutation.isPending}
+          onConfirm={(payload) => {
+            statusMutation.mutate(payload, {
+              onSuccess: () => setShowDoneModal(false),
+            });
+          }}
+        />
       )}
     </div>
   );

@@ -11,6 +11,7 @@ export default function QuickAssignTaskModal({ assigneeUser, team, onClose }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('Medium');
+  const [workScope, setWorkScope] = useState('Half Day');
   const [dueDate, setDueDate] = useState('');
   const [estimatedEffort, setEstimatedEffort] = useState('');
 
@@ -47,6 +48,7 @@ export default function QuickAssignTaskModal({ assigneeUser, team, onClose }) {
       title: title.trim(),
       description: description.trim() || undefined,
       priority,
+      workScope,
       assigneeIds: assigneeUser?._id ? [assigneeUser._id] : undefined,
       dueDate: dueDate || null,
       estimatedEffort: estimatedEffort ? parseFloat(estimatedEffort) : undefined,
@@ -158,6 +160,34 @@ export default function QuickAssignTaskModal({ assigneeUser, team, onClose }) {
                 onChange={(e) => setDueDate(e.target.value)}
                 className="input-field text-xs"
               />
+            </div>
+          </div>
+
+          {/* Work Scope */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-surface-500 mb-1">
+              Work Scope (Base Marks)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { id: 'Half Day', label: 'Half Day (10 pts)' },
+                { id: 'Full Day', label: 'Full Day (20 pts)' },
+                { id: 'Quick', label: 'Quick (<2h • 5 pts)' },
+                { id: 'Multi-Day', label: 'Multi-Day (35 pts)' },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setWorkScope(s.id)}
+                  className={`rounded-lg border px-2 py-1.5 text-xs text-center font-medium transition-all ${
+                    workScope === s.id
+                      ? 'bg-indigo-50 border-indigo-400 text-indigo-900 ring-1 ring-indigo-400'
+                      : 'border-surface-200 text-surface-600 hover:border-surface-300 hover:bg-surface-50'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
             </div>
           </div>
 

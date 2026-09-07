@@ -440,26 +440,62 @@ export default function Profile() {
           </div>
           
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-            <div className="rounded-xl bg-surface-50 p-4 border border-surface-100 flex flex-col">
-              <h3 className="text-sm font-bold text-surface-900 mb-3 flex items-center gap-1.5">
-                <Award className="h-4 w-4 text-indigo-600" /> How Scoring Works
-              </h3>
-              <ul className="text-xs text-surface-600 space-y-2.5 flex-1">
-                <li className="flex items-start gap-2">
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-green-100 text-[9px] font-bold text-green-700 mt-0.5">+15</span>
-                  <span><strong className="text-surface-800">Perfect Execution:</strong> Task completed on or before due date with no rework.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[9px] font-bold text-amber-700 mt-0.5">+5</span>
-                  <span><strong className="text-surface-800">Needed Rework:</strong> Task completed on time, but was reopened at least once.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-100 text-[9px] font-bold text-red-700 mt-0.5">0</span>
-                  <span><strong className="text-surface-800">Late:</strong> Task completed after the official due date has passed.</span>
-                </li>
-              </ul>
-              <p className="mt-4 text-[10px] font-medium text-surface-500 italic">
-                * Note: Reopened tasks temporarily reverse your points until finished again.
+            <div className="rounded-xl bg-surface-50 p-4 border border-surface-100 flex flex-col justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-surface-900 mb-2.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Award className="h-4 w-4 text-indigo-600" /> How Scoring Works
+                  </span>
+                  <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                    Dynamic Scope
+                  </span>
+                </h3>
+
+                {/* Base Marks by Scope */}
+                <div className="space-y-1.5 mb-3">
+                  <p className="text-[10px] font-bold text-surface-400 uppercase tracking-wider">Base Marks (Work Scope)</p>
+                  <div className="grid grid-cols-2 gap-1.5 text-xs">
+                    <div className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-surface-200 shadow-2xs">
+                      <span className="font-semibold text-surface-700">Full Day (6–8h)</span>
+                      <span className="font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[11px] border border-emerald-200">+20 pts</span>
+                    </div>
+                    <div className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-surface-200 shadow-2xs">
+                      <span className="font-semibold text-surface-700">Half Day (3–4h)</span>
+                      <span className="font-black text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded text-[11px] border border-indigo-200">+10 pts</span>
+                    </div>
+                    <div className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-surface-200 shadow-2xs">
+                      <span className="font-semibold text-surface-700">Multi-Day (&gt;8h)</span>
+                      <span className="font-black text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded text-[11px] border border-purple-200">+35 pts</span>
+                    </div>
+                    <div className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-surface-200 shadow-2xs">
+                      <span className="font-semibold text-surface-700">Quick (&lt;2h)</span>
+                      <span className="font-black text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[11px] border border-surface-200">+5 pts</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Multipliers & Criteria */}
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-bold text-surface-400 uppercase tracking-wider">Evaluation &amp; Multipliers</p>
+                  <ul className="text-xs text-surface-600 space-y-1.5">
+                    <li className="flex items-start gap-1.5">
+                      <span className="font-bold text-amber-600 shrink-0 text-[11px]">★ Rating:</span>
+                      <span><strong>Outstanding (+20%)</strong>, <strong>Good (100%)</strong>, or <strong>Needs Polish (-25%)</strong> rated by Admin.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="font-bold text-blue-600 shrink-0 text-[11px]">⚡ Priority:</span>
+                      <span>Critical (1.4x), High (1.2x), Medium (1.0x), Low (0.8x).</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="font-bold text-rose-600 shrink-0 text-[11px]">⏱ Delivery:</span>
+                      <span>On-time awards full marks; late deliveries earn <strong>70% partial credit</strong>.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <p className="mt-3 pt-2.5 border-t border-surface-200/60 text-[10px] font-medium text-surface-500 italic">
+                * Note: Reopened tasks temporarily pause marks until reviewed &amp; approved again.
               </p>
             </div>
 

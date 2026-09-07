@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { noteApi, taskApi } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import NoteEditor from '../components/notes/NoteEditor';
-import { Search, Plus, FileText, Clock, Pin, Trash2, Link as LinkIcon, Unlink, X } from 'lucide-react';
+import { Search, Plus, FileText, Clock, Pin, Trash2, Link as LinkIcon, Unlink, X, ArrowLeft } from 'lucide-react';
 import { formatDate } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
@@ -79,17 +79,25 @@ export default function Notes() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] gap-4">
+    <div className="flex h-[calc(100vh-5.5rem)] sm:h-[calc(100vh-6rem)] md:gap-4 relative">
       {/* Sidebar List */}
-      <div className="w-80 flex flex-col bg-white rounded-xl border border-surface-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-surface-200 space-y-4 bg-surface-50">
+      <div className={`${
+        selectedNoteId ? 'hidden md:flex' : 'flex'
+      } w-full md:w-80 flex-col bg-white rounded-xl border border-surface-200 shadow-sm overflow-hidden shrink-0`}>
+        <div className="p-3 sm:p-4 border-b border-surface-200 space-y-3 sm:space-y-4 bg-surface-50">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-surface-900">Notes</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-surface-900">Notes</h2>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-surface-200 text-surface-700">
+                {notes.length}
+              </span>
+            </div>
             <button 
               onClick={handleCreate}
               disabled={createMutation.isPending}
-              className="btn-primary p-1.5"
+              className="btn-primary p-2 sm:p-1.5"
               title="New Note"
+              aria-label="New Note"
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -127,18 +135,23 @@ export default function Notes() {
           {isLoading ? (
             <div className="p-4 text-center text-sm text-surface-500">Loading notes...</div>
           ) : notes.length === 0 ? (
-            <div className="p-4 flex flex-col items-center text-center">
-              <FileText className="h-8 w-8 text-surface-300 mb-2" />
-              <p className="text-sm text-surface-500">No notes found.</p>
+            <div className="p-6 flex flex-col items-center text-center">
+              <FileText className="h-10 w-10 text-surface-300 mb-2" />
+              <p className="text-sm font-medium text-surface-600">No notes found.</p>
+              {activeTab === 'My Notes' && (
+                <button onClick={handleCreate} className="mt-3 text-xs font-medium text-primary-600 hover:underline">
+                  Create your first note
+                </button>
+              )}
             </div>
           ) : (
             notes.map(note => (
               <div 
                 key={note._id}
                 onClick={() => setSelectedNoteId(note._id)}
-                className={`p-3 rounded-lg cursor-pointer transition-colors border ${
+                className={`p-3 rounded-lg cursor-pointer transition-colors border active:bg-surface-100 ${
                   selectedNoteId === note._id 
-                    ? 'bg-primary-50 border-primary-200' 
+                    ? 'bg-primary-50 border-primary-200 dark:bg-primary-900/30' 
                     : 'bg-white border-transparent hover:bg-surface-50 hover:border-surface-200'
                 }`}
               >
@@ -149,7 +162,7 @@ export default function Notes() {
                   {note.pinned && <Pin className="h-3.5 w-3.5 text-primary-600 shrink-0" />}
                 </div>
                 <div className="mt-1 flex items-center gap-2 text-xs text-surface-500">
-                  <Clock className="h-3 w-3" />
+                  <Clock className="h-3 w-3 shrink-0" />
                   <span>{formatDate(note.updatedAt)}</span>
                 </div>
                 {note.linkedTaskId && (
@@ -164,40 +177,52 @@ export default function Notes() {
       </div>
 
       {/* Editor Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className={`${
+        selectedNoteId ? 'flex' : 'hidden md:flex'
+      } flex-1 flex-col min-w-0`}>
         {selectedNote ? (
           <div className="flex flex-col h-full bg-white rounded-xl border border-surface-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-surface-200 flex items-center justify-between bg-surface-50">
-              <NoteTitleInput
-                key={selectedNote._id}
-                noteId={selectedNote._id}
-                initialTitle={selectedNote.title}
-                readOnly={activeTab !== 'My Notes'}
-                onSave={(newTitle) => {
-                  updateMutation.mutate({ id: selectedNote._id, data: { title: newTitle } });
-                }}
-              />
+            <div className="p-3 sm:p-4 border-b border-surface-200 flex items-center justify-between bg-surface-50 gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                <button
+                  onClick={() => setSelectedNoteId(null)}
+                  className="md:hidden p-1.5 -ml-1 text-surface-600 hover:text-surface-900 rounded-lg hover:bg-surface-200 transition-colors shrink-0"
+                  title="Back to notes list"
+                  aria-label="Back to notes list"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+                <NoteTitleInput
+                  key={selectedNote._id}
+                  noteId={selectedNote._id}
+                  initialTitle={selectedNote.title}
+                  readOnly={activeTab !== 'My Notes'}
+                  onSave={(newTitle) => {
+                    updateMutation.mutate({ id: selectedNote._id, data: { title: newTitle } });
+                  }}
+                />
+              </div>
               
               {activeTab === 'My Notes' && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                   <button
                     onClick={() => setIsTaskModalOpen(true)}
-                    className={`btn-secondary text-xs px-2 py-1 flex items-center gap-1.5 ${selectedNote.linkedTaskId ? 'bg-blue-50 text-blue-700 border-blue-200' : ''}`}
+                    className={`btn-secondary text-xs px-2 sm:px-2.5 py-1.5 flex items-center gap-1.5 shrink-0 ${selectedNote.linkedTaskId ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300' : ''}`}
                     title={selectedNote.linkedTaskId ? "Linked to task. Click to edit/unlink." : "Link to a task"}
                   >
                     {selectedNote.linkedTaskId ? <Unlink className="h-3.5 w-3.5" /> : <LinkIcon className="h-3.5 w-3.5" />}
-                    {selectedNote.linkedTaskId ? 'Linked' : 'Link Task'}
+                    <span className="hidden sm:inline">{selectedNote.linkedTaskId ? 'Linked' : 'Link Task'}</span>
                   </button>
                   <button
                     onClick={() => updateMutation.mutate({ id: selectedNote._id, data: { pinned: !selectedNote.pinned } })}
-                    className={`p-1.5 rounded-lg transition-colors ${selectedNote.pinned ? 'text-primary-600 bg-primary-100' : 'text-surface-400 hover:bg-surface-200'}`}
+                    className={`p-1.5 sm:p-2 rounded-lg transition-colors shrink-0 ${selectedNote.pinned ? 'text-primary-600 bg-primary-100 dark:bg-primary-900/40' : 'text-surface-400 hover:bg-surface-200'}`}
                     title={selectedNote.pinned ? "Unpin" : "Pin"}
                   >
                     <Pin className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(selectedNote._id)}
-                    className="p-1.5 rounded-lg text-surface-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    className="p-1.5 sm:p-2 rounded-lg text-surface-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
                     title="Delete Note"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -220,12 +245,19 @@ export default function Notes() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 bg-white rounded-xl border border-surface-200 flex flex-col items-center justify-center text-surface-500">
+          <div className="flex-1 bg-white rounded-xl border border-surface-200 flex flex-col items-center justify-center text-surface-500 p-6 text-center">
             <FileText className="h-12 w-12 text-surface-300 mb-4" />
-            <p className="text-lg font-medium">Select a note to view</p>
+            <p className="text-lg font-medium text-surface-800">Select a note to view</p>
+            <p className="text-sm text-surface-500 mt-1 max-w-xs">
+              Choose a note from the list on the left or create a fresh one to begin typing.
+            </p>
             {activeTab === 'My Notes' && (
-              <button onClick={handleCreate} className="mt-4 text-sm text-primary-600 hover:underline">
-                Or create a new one
+              <button 
+                onClick={handleCreate} 
+                className="mt-4 inline-flex items-center gap-1.5 btn-primary text-xs px-4 py-2"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Create new note
               </button>
             )}
           </div>
@@ -268,7 +300,7 @@ function NoteTitleInput({ noteId, initialTitle, readOnly, onSave }) {
       value={title}
       readOnly={readOnly}
       onChange={handleChange}
-      className="text-xl font-bold text-surface-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0 w-1/2"
+      className="text-base sm:text-xl font-bold text-surface-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0 w-full min-w-0"
       placeholder="Note Title"
     />
   );
@@ -288,8 +320,8 @@ function TaskSelectModal({ isOpen, onClose, onSelect }) {
   const filteredTasks = tasks.filter(t => t.title?.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh]">
         <div className="p-4 border-b border-surface-200 flex justify-between items-center bg-surface-50">
           <h3 className="font-bold text-surface-900">Select Task to Link</h3>
           <button onClick={onClose} className="text-surface-400 hover:text-surface-900">

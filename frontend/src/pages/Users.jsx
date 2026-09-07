@@ -154,140 +154,260 @@ export default function Users() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl font-bold text-surface-900">Users</h1>
-          <p className="mt-1 text-sm text-surface-500">{users.length} user(s) in your organization</p>
+          <p className="mt-0.5 text-xs sm:text-sm text-surface-500">{users.length} user(s) in your organization</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowBulkInvite(true)} className="btn-secondary">
-            <Upload className="h-4 w-4" />
-            Bulk Invite
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowBulkInvite(true)} className="btn-secondary flex-1 sm:flex-none text-xs sm:text-sm px-3 sm:px-4 py-2 justify-center shrink-0">
+            <Upload className="h-4 w-4 shrink-0" />
+            <span>Bulk Invite</span>
           </button>
-          <button onClick={() => setShowInvite(true)} className="btn-primary">
-            <UserPlus className="h-4 w-4" />
-            Invite User
+          <button onClick={() => setShowInvite(true)} className="btn-primary flex-1 sm:flex-none text-xs sm:text-sm px-3 sm:px-4 py-2 justify-center shrink-0">
+            <UserPlus className="h-4 w-4 shrink-0" />
+            <span>Invite User</span>
           </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
+      <div className="space-y-2.5 sm:space-y-0 sm:flex sm:items-center sm:gap-3">
+        <div className="relative flex-1 sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-surface-400" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or email..." className="input-field h-9 pl-9 text-sm" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name or email..."
+            className="input-field h-9 pl-9 text-sm w-full"
+          />
         </div>
-        <div className="flex gap-1.5">
-          {['', 'Admin', 'Manager', 'Team Lead', 'Employee'].map((r) => (
-            <button key={r} onClick={() => setRoleFilter(r === roleFilter ? '' : r)}
-              className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                roleFilter === r ? 'bg-primary-100 text-primary-700' : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
-              }`}>{r || 'All'}</button>
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 shrink-0">
+          {['', 'Founder', 'Admin', 'Manager', 'Team Lead', 'Employee'].map((r) => (
+            <button
+              key={r}
+              onClick={() => setRoleFilter(r === roleFilter ? '' : r)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors shrink-0 ${
+                roleFilter === r
+                  ? 'bg-primary-900 text-white dark:bg-primary-100 dark:text-primary-950 shadow-sm'
+                  : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
+              }`}
+            >
+              {r || 'All'}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* Users table */}
+      {/* Users display */}
       {isLoading ? (
         <div className="flex h-64 items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
         </div>
-      ) : (
-        <div className="overflow-hidden rounded-xl border border-surface-200 bg-white">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-surface-200 bg-surface-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-surface-500">User</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-surface-500">Role</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-surface-500">Department</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-surface-500">Status</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-surface-500">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-100">
-              {users.map((u) => (
-                <tr key={u._id} className="hover:bg-surface-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700">
-                        {getInitials(u.name)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-surface-900">{u.name}</p>
-                        <p className="text-xs text-surface-400">{u.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      u.role === 'Founder' ? 'bg-purple-100 text-purple-700' :
-                      u.role === 'Admin' ? 'bg-blue-100 text-blue-700' :
-                      u.role === 'Manager' ? 'bg-amber-100 text-amber-700' :
-                      u.role === 'Team Lead' ? 'bg-cyan-100 text-cyan-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>{u.role}</span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-surface-600">{u.department?.name || '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 text-xs ${u.isActive ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {u.isActive ? <CheckCircle className="h-3 w-3" /> : <Ban className="h-3 w-3" />}
-                      {u.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {u.role !== 'Founder' && u._id !== currentUser?._id && (
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => {
-                            setEditUser(u);
-                            setEditForm({ role: u.role, departmentId: u.department?._id || '' });
-                            setShowEditUser(true);
-                          }}
-                          className="btn-ghost p-1 text-surface-400 hover:text-primary-500"
-                          title="Edit user"
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => u.isActive ? deactivateMutation.mutate(u._id) : reactivateMutation.mutate(u._id)}
-                          className={`btn-ghost text-xs ${u.isActive ? 'text-red-500 hover:text-red-600' : 'text-emerald-500 hover:text-emerald-600'}`}
-                        >
-                          {u.isActive ? 'Deactivate' : 'Reactivate'}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setResetPasswordUser(u);
-                            setResetPasswordValue('');
-                            setShowResetPassword(true);
-                          }}
-                          className="btn-ghost p-1 text-amber-500 hover:text-amber-600"
-                          title="Reset password"
-                        >
-                          <KeyRound className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirm(u)}
-                          className="btn-ghost p-1 text-surface-400 hover:text-red-500"
-                          title="Delete user"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    )}
-                    {u._id === currentUser?._id && <span className="text-xs text-surface-400 italic">You</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      ) : users.length === 0 ? (
+        <div className="rounded-xl border border-surface-200 bg-white p-8 text-center">
+          <User className="h-10 w-10 text-surface-300 mx-auto mb-2" />
+          <p className="text-sm font-medium text-surface-600">No users found</p>
+          <p className="text-xs text-surface-400 mt-1">Try adjusting your search or filters</p>
         </div>
+      ) : (
+        <>
+          {/* Mobile Card View (visible on mobile < md) */}
+          <div className="space-y-3 md:hidden">
+            {users.map((u) => (
+              <div key={u._id} className="rounded-xl border border-surface-200 bg-white p-4 shadow-sm space-y-3">
+                {/* Header: Avatar, Name, Email, Status */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700">
+                      {getInitials(u.name)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-surface-900 truncate">{u.name}</p>
+                      <p className="text-xs text-surface-500 truncate">{u.email}</p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
+                    u.isActive 
+                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                      : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                  }`}>
+                    {u.isActive ? <CheckCircle className="h-3 w-3" /> : <Ban className="h-3 w-3" />}
+                    {u.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+
+                {/* Meta tags: Role and Department */}
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-surface-100">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    u.role === 'Founder' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
+                    u.role === 'Admin' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                    u.role === 'Manager' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
+                    u.role === 'Team Lead' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300' :
+                    'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                  }`}>{u.role}</span>
+                  {u.department?.name ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-surface-100 px-2.5 py-0.5 text-xs text-surface-600">
+                      <Building2 className="h-3 w-3 text-surface-400" />
+                      <span className="truncate max-w-[150px]">{u.department.name}</span>
+                    </span>
+                  ) : (
+                    <span className="text-xs text-surface-400 italic">No department</span>
+                  )}
+                </div>
+
+                {/* Actions row */}
+                {u.role !== 'Founder' && u._id !== currentUser?._id && (
+                  <div className="flex items-center justify-between pt-2 border-t border-surface-100 gap-1.5">
+                    <button
+                      onClick={() => {
+                        setEditUser(u);
+                        setEditForm({ role: u.role, departmentId: u.department?._id || '' });
+                        setShowEditUser(true);
+                      }}
+                      className="btn-secondary flex-1 justify-center py-1.5 text-xs text-surface-700 hover:text-primary-600"
+                    >
+                      <Edit2 className="h-3.5 w-3.5 mr-1" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => u.isActive ? deactivateMutation.mutate(u._id) : reactivateMutation.mutate(u._id)}
+                      className={`btn-secondary flex-1 justify-center py-1.5 text-xs ${
+                        u.isActive ? 'text-amber-600 hover:text-amber-700' : 'text-emerald-600 hover:text-emerald-700'
+                      }`}
+                    >
+                      {u.isActive ? 'Deactivate' : 'Reactivate'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setResetPasswordUser(u);
+                        setResetPasswordValue('');
+                        setShowResetPassword(true);
+                      }}
+                      className="btn-ghost p-1.5 text-amber-500 hover:text-amber-600 rounded-lg"
+                      title="Reset password"
+                      aria-label="Reset password"
+                    >
+                      <KeyRound className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(u)}
+                      className="btn-ghost p-1.5 text-surface-400 hover:text-red-500 rounded-lg"
+                      title="Delete user"
+                      aria-label="Delete user"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                {u._id === currentUser?._id && (
+                  <div className="pt-2 border-t border-surface-100 text-right">
+                    <span className="text-xs text-surface-400 italic">This is your account</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View (visible on md+) */}
+          <div className="hidden md:block overflow-hidden rounded-xl border border-surface-200 bg-white">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-surface-200 bg-surface-50">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-surface-500">User</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-surface-500">Role</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-surface-500">Department</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-surface-500">Status</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-surface-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-100">
+                  {users.map((u) => (
+                    <tr key={u._id} className="hover:bg-surface-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700">
+                            {getInitials(u.name)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-surface-900">{u.name}</p>
+                            <p className="text-xs text-surface-400">{u.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          u.role === 'Founder' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
+                          u.role === 'Admin' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                          u.role === 'Manager' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
+                          u.role === 'Team Lead' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300' :
+                          'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                        }`}>{u.role}</span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-surface-600">{u.department?.name || '—'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1 text-xs ${u.isActive ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {u.isActive ? <CheckCircle className="h-3 w-3" /> : <Ban className="h-3 w-3" />}
+                          {u.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {u.role !== 'Founder' && u._id !== currentUser?._id && (
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => {
+                                setEditUser(u);
+                                setEditForm({ role: u.role, departmentId: u.department?._id || '' });
+                                setShowEditUser(true);
+                              }}
+                              className="btn-ghost p-1 text-surface-400 hover:text-primary-500"
+                              title="Edit user"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => u.isActive ? deactivateMutation.mutate(u._id) : reactivateMutation.mutate(u._id)}
+                              className={`btn-ghost text-xs ${u.isActive ? 'text-red-500 hover:text-red-600' : 'text-emerald-500 hover:text-emerald-600'}`}
+                            >
+                              {u.isActive ? 'Deactivate' : 'Reactivate'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setResetPasswordUser(u);
+                                setResetPasswordValue('');
+                                setShowResetPassword(true);
+                              }}
+                              className="btn-ghost p-1 text-amber-500 hover:text-amber-600"
+                              title="Reset password"
+                            >
+                              <KeyRound className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(u)}
+                              className="btn-ghost p-1 text-surface-400 hover:text-red-500"
+                              title="Delete user"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
+                        {u._id === currentUser?._id && <span className="text-xs text-surface-400 italic">You</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)}>
-          <div className="w-full max-w-sm rounded-2xl border border-surface-200 bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" onClick={() => setDeleteConfirm(null)}>
+          <div className="w-full max-w-sm rounded-2xl border border-surface-200 bg-white p-5 shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
                 <Trash2 className="h-5 w-5 text-red-500" />
@@ -322,8 +442,8 @@ export default function Users() {
 
       {/* Bulk Invite Modal */}
       {showBulkInvite && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => { if (!bulkResults) setShowBulkInvite(false); }}>
-          <div className="w-full max-w-lg rounded-2xl border border-surface-200 bg-white p-6 shadow-xl animate-slide-in" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" onClick={() => { if (!bulkResults) setShowBulkInvite(false); }}>
+          <div className="w-full max-w-lg rounded-2xl border border-surface-200 bg-white p-4 sm:p-6 shadow-xl animate-slide-in max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-surface-900">
@@ -527,8 +647,8 @@ export default function Users() {
 
       {/* Reset Password Modal */}
       {showResetPassword && resetPasswordUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => { setShowResetPassword(false); setResetPasswordUser(null); setResetPasswordValue(''); }}>
-          <div className="w-full max-w-sm rounded-2xl border border-surface-200 bg-white p-6 shadow-xl animate-slide-in" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" onClick={() => { setShowResetPassword(false); setResetPasswordUser(null); setResetPasswordValue(''); }}>
+          <div className="w-full max-w-sm rounded-2xl border border-surface-200 bg-white p-4 sm:p-6 shadow-xl animate-slide-in max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
@@ -606,8 +726,8 @@ export default function Users() {
 
       {/* Edit User Modal */}
       {showEditUser && editUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl border border-surface-200 bg-white p-6 shadow-xl animate-slide-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-surface-200 bg-white p-4 sm:p-6 shadow-xl animate-slide-in max-h-[90vh] overflow-y-auto">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-surface-900">Edit User</h2>
@@ -704,15 +824,22 @@ export default function Users() {
                   const doneCount = w.tasksByStatus.find((s) => s.status === 'Done')?.count || 0;
                   const overdueCount = 0; // Could fetch separately
                   return (
-                    <div key={w.user._id} className="group flex items-center gap-3">
+                    <div key={w.user._id} className="group flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2.5 sm:p-0 rounded-xl sm:rounded-none bg-surface-50 sm:bg-transparent">
                       {/* Avatar + Name */}
-                      <div className="flex w-44 items-center gap-2 shrink-0">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-[9px] font-semibold text-primary-700">
-                          {getInitials(w.user.name)}
+                      <div className="flex items-center justify-between sm:w-44 shrink-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[9px] font-semibold text-primary-700">
+                            {getInitials(w.user.name)}
+                          </div>
+                          <span className="truncate text-sm font-medium text-surface-700 group-hover:text-surface-900 transition-colors">
+                            {w.user.name}
+                          </span>
                         </div>
-                        <span className="truncate text-sm text-surface-700 group-hover:text-surface-900 transition-colors">
-                          {w.user.name}
-                        </span>
+                        {doneCount > 0 && (
+                          <span className="sm:hidden shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600">
+                            {doneCount} done
+                          </span>
+                        )}
                       </div>
 
                       {/* Bar chart */}
@@ -724,13 +851,13 @@ export default function Users() {
                               style={{ width: `${barWidth}%` }}
                             />
                           </div>
-                          <span className="w-6 text-right text-xs font-semibold text-surface-600">
+                          <span className="w-6 text-right text-xs font-semibold text-surface-600 shrink-0">
                             {w.totalTasks}
                           </span>
                         </div>
                         {/* Status breakdown dots */}
                         {w.tasksByStatus.length > 0 && (
-                          <div className="flex items-center gap-2 mt-0.5">
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
                             {['To Do', 'In Progress', 'In Review', 'Done', 'Blocked'].map((s) => {
                               const count = w.tasksByStatus.find((x) => x.status === s)?.count || 0;
                               if (count === 0) return null;
@@ -745,9 +872,9 @@ export default function Users() {
                         )}
                       </div>
 
-                      {/* Done count badge */}
+                      {/* Desktop Done count badge */}
                       {doneCount > 0 && (
-                        <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600">
+                        <span className="hidden sm:inline-flex shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600">
                           {doneCount} done
                         </span>
                       )}
@@ -762,8 +889,8 @@ export default function Users() {
 
       {/* Invite Modal */}
       {showInvite && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-surface-200 bg-white p-6 shadow-xl animate-slide-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-surface-200 bg-white p-4 sm:p-6 shadow-xl animate-slide-in max-h-[90vh] overflow-y-auto">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-surface-900">Invite User</h2>
               <button onClick={() => setShowInvite(false)} className="btn-ghost p-1"><X className="h-5 w-5" /></button>

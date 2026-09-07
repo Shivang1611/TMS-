@@ -74,6 +74,14 @@
   .dark .bg-white {
     background-color: var(--color-surface-100) !important;
   }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 @layer components {
