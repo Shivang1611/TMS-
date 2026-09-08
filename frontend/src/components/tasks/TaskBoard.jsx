@@ -21,16 +21,17 @@ export default function TaskBoard({ tasks, onTaskClick }) {
   const queryClient = useQueryClient();
   const [localTasks, setLocalTasks] = useState(tasks);
   
-  const isManager = user?.role === 'Founder' || user?.role === 'Manager' || user?.role === 'Team Leader';
+  const isManager = ['Founder', 'Admin', 'Manager', 'Team Leader', 'Team Lead'].includes(user?.role);
 
   useEffect(() => {
     setLocalTasks(tasks);
   }, [tasks]);
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => taskApi.update(id, data),
+    mutationFn: ({ id, data }) => taskApi.updateStatus(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || 'Failed to update task status');

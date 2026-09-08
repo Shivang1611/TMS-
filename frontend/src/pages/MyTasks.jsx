@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { taskApi } from '../api/api';
+import { taskApi, userApi } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { LayoutDashboard, CheckSquare, Calendar, FolderKanban, FileText, CheckCircle2, Clock, AlertCircle, Trash2 } from 'lucide-react';
@@ -44,7 +44,34 @@ export default function MyTasks() {
     enabled: !!user?._id,
   });
 
-  const tasks = data?.data || [];
+  const [dateFilter, setDateFilter] = useState('');
+  const [employeeFilter, setEmployeeFilter] = useState('');
+
+  const { data: usersData } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => userApi.list({}),
+  });
+  const usersList = usersData?.data || [];
+
+  const rawTasks = data?.data || [];
+  
+  const tasks = useMemo(() => {
+    return rawTasks.filter(t => {
+      if (dateFilter) {
+        if (!t.dueDate) return false;
+        const taskDate = new Date(t.dueDate).toISOString().split('T')[0];
+        if (taskDate !== dateFilter) return false;
+      }
+      if (employeeFilter) {
+        if (viewMode === 'assignedToMe') {
+          if (t.createdBy?._id !== employeeFilter && t.createdBy !== employeeFilter) return false;
+        } else {
+          if (!t.assignees?.some(a => a._id === employeeFilter || a === employeeFilter)) return false;
+        }
+      }
+      return true;
+    });
+  }, [rawTasks, dateFilter, employeeFilter, viewMode]);
 
   // Metrics Calculations
   const metrics = useMemo(() => {
@@ -161,21 +188,52 @@ export default function MyTasks() {
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-6 border-b border-surface-200 text-sm font-semibold overflow-x-auto whitespace-nowrap scrollbar-hide">
-        {['List', 'Board', 'Calendar', 'Dashboard', 'Files'].map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-3 border-b-2 transition-colors ${
-              activeTab === tab
-                ? 'border-primary-900 text-primary-900'
-                : 'border-transparent text-surface-500 hover:text-surface-900'
-            }`}
+      {/* Tabs & Filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-surface-200">
+        <div className="flex gap-6 text-sm font-semibold overflow-x-auto whitespace-nowrap scrollbar-hide">
+          {['List', 'Board', 'Calendar', 'Dashboard', 'Files'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-3 border-b-2 transition-colors ${
+                activeTab === tab
+                  ? 'border-primary-900 text-primary-900'
+                  : 'border-transparent text-surface-500 hover:text-surface-900'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+        
+        <div className="flex items-center gap-3 pb-2 sm:pb-0 sm:mb-2">
+          <input 
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="input-field py-1.5 text-sm w-36"
+            title="Filter by Date"
+          />
+          <select 
+            value={employeeFilter}
+            onChange={(e) => setEmployeeFilter(e.target.value)}
+            className="input-field py-1.5 text-sm w-40"
+            title="Filter by Employee"
           >
-            {tab}
-          </button>
-        ))}
+            <option value="">All Employees</option>
+            {usersList.map(u => (
+              <option key={u._id} value={u._id}>{u.name}</option>
+            ))}
+          </select>
+          {(dateFilter || employeeFilter) && (
+            <button 
+              onClick={() => { setDateFilter(''); setEmployeeFilter(''); }}
+              className="text-xs font-medium text-red-500 hover:text-red-700 whitespace-nowrap"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (

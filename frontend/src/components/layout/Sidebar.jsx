@@ -16,7 +16,6 @@ import {
 
 // Removed static navItems to define dynamically inside the component
 const adminItems = [
-  { to: '/users', icon: Users, label: 'Users' },
   { to: '/reports', icon: BarChart3, label: 'Reports' },
   { to: '/audit-log', icon: ScrollText, label: 'Audit Log' },
 ];
@@ -24,7 +23,8 @@ const adminItems = [
 export default function Sidebar({ collapsed, onToggle }) {
   const { user } = useAuth();
   const isAdmin = ['Founder', 'Admin'].includes(user?.role);
-  const isManager = ['Founder', 'Admin', 'Manager', 'Team Lead'].includes(user?.role);
+  const isManager = ['Founder', 'Admin', 'Manager', 'Team Lead', 'HR'].includes(user?.role);
+  const canManageStaff = ['Founder', 'Admin', 'Manager', 'Team Lead', 'HR'].includes(user?.role);
 
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -33,6 +33,9 @@ export default function Sidebar({ collapsed, onToggle }) {
     ...(isManager ? [
       { to: '/tasks', icon: CheckSquare, label: 'Assign Task' },
       { to: '/org-structure', icon: Building2, label: 'Org Structure' },
+    ] : []),
+    ...(canManageStaff ? [
+      { to: '/users', icon: Users, label: 'Manage Staff' }
     ] : []),
     { to: '/notes', icon: FileText, label: 'Notes' },
     { to: '/notifications', icon: Bell, label: 'Notifications' },

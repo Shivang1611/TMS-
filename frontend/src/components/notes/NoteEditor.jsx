@@ -6,18 +6,33 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
+import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { 
   Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3,
-  Table as TableIcon, Trash2, Link as LinkIcon, Palette
+  Table as TableIcon, Trash2, Link as LinkIcon, Palette, Image as ImageIcon, Paperclip
 } from 'lucide-react';
+import { uploadApi, documentApi } from '../../api/api';
 
 export default function NoteEditor({ initialContent, onSave, readOnly = false }) {
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const saveTimeoutRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const extensions = useMemo(() => [
     StarterKit,
+    Image,
+    Link.configure({
+      openOnClick: false,
+      HTMLAttributes: {
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        class: 'text-primary-600 underline hover:text-primary-700',
+      },
+    }),
     Table.configure({ resizable: true }),
     TableRow,
     TableHeader,
@@ -60,6 +75,44 @@ export default function NoteEditor({ initialContent, onSave, readOnly = false })
   }, []);
 
   if (!editor) return null;
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await uploadApi.image(formData);
+      if (res.success && res.data.url) {
+        editor.chain().focus().setImage({ src: res.data.url }).run();
+      }
+    } catch (err) {
+      console.error('Image upload failed', err);
+    } finally {
+      setIsUploading(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await documentApi.upload(formData);
+      if (res.success && res.data.url) {
+        editor.chain().focus().insertContent(`<a href="${res.data.url}" target="_blank">${res.data.name}</a> `).run();
+      }
+    } catch (err) {
+      console.error('File upload failed', err);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   return (
     <div className="flex flex-col h-full w-full bg-white">
@@ -137,8 +190,54 @@ export default function NoteEditor({ initialContent, onSave, readOnly = false })
             </div>
           )}
 
-          <div className="ml-auto text-xs text-surface-400 font-medium pl-2 shrink-0">
-            {isSaving ? 'Saving...' : 'Saved'}
+          <div className="w-px h-5 bg-surface-300 mx-1 shrink-0" />
+          
+          <input 
+            type="file" 
+            accept="image/*" 
+            ref={imageInputRef} 
+            onChange={handleImageUpload} 
+            className="hidden" 
+          />
+          <MenuButton 
+            onClick={() => imageInputRef.current?.click()} 
+            icon={ImageIcon}
+            title="Attach Image"
+          />
+
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            className="hidden" 
+          />
+          <MenuButton 
+            onClick={() => fileInputRef.current?.click()} 
+            icon={Paperclip}
+            title="Attach File"
+          />
+
+          {editor.isActive('image') && (
+            <>
+              <div className="w-px h-5 bg-surface-300 mx-1 shrink-0" />
+              <button onClick={() => editor.chain().focus().deleteSelection().run()} className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded flex items-center shrink-0 transition-colors">
+                <Trash2 className="h-3 w-3 mr-1"/> Remove Image
+              </button>
+            </>
+          )}
+
+          {editor.isActive('link') && (
+            <>
+              <div className="w-px h-5 bg-surface-300 mx-1 shrink-0" />
+              <button onClick={() => editor.chain().focus().unsetLink().run()} className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded flex items-center shrink-0 transition-colors">
+                <Trash2 className="h-3 w-3 mr-1"/> Unlink
+              </button>
+            </>
+          )}
+
+          <div className="ml-auto text-xs text-surface-400 font-medium pl-2 shrink-0 flex items-center gap-2">
+            {isUploading && <span className="text-primary-600 flex items-center"><span className="animate-pulse">Uploading...</span></span>}
+            {!isUploading && (isSaving ? 'Saving...' : 'Saved')}
           </div>
         </div>
       )}

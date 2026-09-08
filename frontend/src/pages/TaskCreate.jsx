@@ -30,8 +30,11 @@ export default function TaskCreate() {
 
   const [form, setForm] = useState({
     projectId: projectId || '', teamId: teamId || '', title: '', description: '', priority: 'Medium',
-    workScope: 'Half Day',
-    assigneeIds: assigneeId ? [assigneeId] : [], dueDate: '', estimatedEffort: '', allowAssigneeToEdit: false,
+    workScope: 'Full Day',
+    assigneeIds: assigneeId ? [assigneeId] : [], 
+    dueDate: new Date().toISOString().split('T')[0], 
+    estimatedEffort: '7.5', 
+    allowAssigneeToEdit: false,
   });
 
   const { data: projectsData } = useQuery({

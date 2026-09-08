@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend as RechartsLegend,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { BarChart3, Users, TrendingUp, Download, X, Trophy, ChevronRight, FileText } from 'lucide-react';
+import { BarChart3, Users, TrendingUp, Download, X, Trophy, ChevronRight, ChevronLeft, FileText } from 'lucide-react';
 import { statusConfig, getInitials } from '../utils/helpers';
 import TaskDetailModal from '../components/tasks/TaskDetailModal';
 import MasterTaskTracker from '../components/tasks/MasterTaskTracker';
@@ -24,6 +24,7 @@ export default function Reports() {
   const isAdminOrManager = ['Founder', 'Admin', 'Manager'].includes(user?.role);
 
   const [period, setPeriod] = useState('all');
+  const [weekOffset, setWeekOffset] = useState(0);
   const [selectedAssignee, setSelectedAssignee] = useState('');
 
   // Fetch all users to populate the assignee filter
@@ -35,8 +36,8 @@ export default function Reports() {
   const users = usersData?.data || [];
 
   const { data: taskData, isLoading: taskLoading } = useQuery({
-    queryKey: ['reports', 'tasks', period, selectedAssignee],
-    queryFn: () => reportApi.tasks({ period, assigneeId: selectedAssignee || undefined }),
+    queryKey: ['reports', 'tasks', period, selectedAssignee, weekOffset],
+    queryFn: () => reportApi.tasks({ period, assigneeId: selectedAssignee || undefined, weekOffset }),
     enabled: tab === 'tasks',
   });
 
@@ -309,7 +310,7 @@ export default function Reports() {
                 ].map((p) => (
                   <button
                     key={p.id}
-                    onClick={() => setPeriod(p.id)}
+                    onClick={() => { setPeriod(p.id); setWeekOffset(0); }}
                     className={`px-3 py-1.5 rounded-md transition-all ${
                       period === p.id
                         ? 'bg-white text-primary-700 shadow-sm font-semibold'
@@ -496,7 +497,31 @@ export default function Reports() {
                     <h3 className="text-base font-bold text-surface-900">Detailed Task Report</h3>
                     <p className="text-xs text-surface-500">What tasks were assigned, who assigned them, who completed them, and time taken</p>
                   </div>
-                  <span className="text-xs text-surface-400">Showing {detailedTasks.length} record(s)</span>
+                  <div className="flex items-center gap-4">
+                    {period === 'weekly' && (
+                      <div className="flex items-center gap-1 bg-surface-100 p-1 rounded-lg border border-surface-200 h-[32px]">
+                        <button 
+                          onClick={() => setWeekOffset(prev => prev - 1)}
+                          className="p-1 hover:bg-white rounded transition-colors text-surface-600 hover:text-surface-900"
+                          title="Previous Week"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <span className="text-xs font-semibold px-2 min-w-[70px] text-center text-surface-700">
+                          {weekOffset === 0 ? 'This Week' : weekOffset === -1 ? 'Last Week' : `${Math.abs(weekOffset)} wks ago`}
+                        </span>
+                        <button 
+                          onClick={() => setWeekOffset(prev => prev + 1)}
+                          disabled={weekOffset >= 0}
+                          className={`p-1 rounded transition-colors ${weekOffset >= 0 ? 'text-surface-300' : 'hover:bg-white text-surface-600 hover:text-surface-900'}`}
+                          title="Next Week"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                    <span className="text-xs text-surface-400">Showing {detailedTasks.length} record(s)</span>
+                  </div>
                 </div>
 
                 {detailedTasks.length === 0 ? (

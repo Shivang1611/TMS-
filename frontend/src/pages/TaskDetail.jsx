@@ -76,7 +76,7 @@ export default function TaskDetail() {
 
   const task = data?.data;
 
-  const isManager = user?.role === 'Founder' || user?.role === 'Manager' || user?.role === 'Team Leader';
+  const isManager = ['Founder', 'Admin', 'Manager', 'Team Leader', 'Team Lead'].includes(user?.role);
   const canEdit = isManager || (task?.assignees?.some(a => a._id === user?._id) && task?.allowAssigneeToEdit);
 
   useEffect(() => {
@@ -88,13 +88,57 @@ export default function TaskDetail() {
 
   const statusMutation = useMutation({
     mutationFn: (statusData) => taskApi.updateStatus(id, statusData),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      const updatedTask = res?.data;
+      if (updatedTask) {
+        queryClient.setQueryData(['task', id], (old) => {
+          if (!old) return { success: true, data: updatedTask };
+          return {
+            ...old,
+            data: {
+              ...old.data,
+              ...updatedTask,
+            },
+          };
+        });
+
+        queryClient.setQueriesData({ queryKey: ['tasks'] }, (old) => {
+          if (!old?.data || !Array.isArray(old.data)) return old;
+          return {
+            ...old,
+            data: old.data.map((t) =>
+              (t._id === id || t._id?.toString() === id) ? { ...t, ...updatedTask } : t
+            ),
+          };
+        });
+
+        queryClient.setQueriesData({ queryKey: ['my-tasks'] }, (old) => {
+          if (!old?.data || !Array.isArray(old.data)) return old;
+          return {
+            ...old,
+            data: old.data.map((t) =>
+              (t._id === id || t._id?.toString() === id) ? { ...t, ...updatedTask } : t
+            ),
+          };
+        });
+      }
+
       queryClient.invalidateQueries({ queryKey: ['task', id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       setShowBlockedModal(false);
-      toast.success('Status updated');
+      setShowDoneModal(false);
+      toast.success(`Status updated to ${updatedTask?.status || 'Done'}! ✓`);
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || 'Failed to update status');
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.errors?.[0]?.message ||
+        err?.message ||
+        'Failed to update status';
+      toast.error(msg);
+      setShowBlockedModal(false);
+      setShowDoneModal(false);
     },
   });
 
@@ -255,7 +299,7 @@ export default function TaskDetail() {
         </button>
 
         <div className="flex items-center gap-1.5">
-          {(isManager ? ['To Do', 'In Progress', 'In Review', 'Done', 'Blocked'].filter(s => s !== task.status) : VALID_TRANSITIONS[task.status])?.map((s) => {
+          {(isManager ? ['To Do', 'In Progress', 'In Review', 'Done', 'Blocked'].filter(s => s !== task.status) : VALID_TRANSITIONS[task.status]?.filter(s => s !== 'Done'))?.map((s) => {
             const isDoneAction = s === 'Done';
             const isBlockedAction = s === 'Blocked';
             return (
@@ -265,8 +309,12 @@ export default function TaskDetail() {
                   if (isBlockedAction) {
                     setShowBlockedModal(true);
                     setBlockedReason('');
-                  } else if (isDoneAction && isManager) {
-                    setShowDoneModal(true);
+                  } else if (isDoneAction) {
+                    if (isManager) {
+                      setShowDoneModal(true);
+                    } else {
+                      toast.error('Only Managers or Team Leads can mark a task as Done.');
+                    }
                   } else {
                     statusMutation.mutate({ status: s });
                   }
@@ -680,9 +728,7 @@ export default function TaskDetail() {
           task={task}
           isPending={statusMutation.isPending}
           onConfirm={(payload) => {
-            statusMutation.mutate(payload, {
-              onSuccess: () => setShowDoneModal(false),
-            });
+            statusMutation.mutate(payload);
           }}
         />
       )}

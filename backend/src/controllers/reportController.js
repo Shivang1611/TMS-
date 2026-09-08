@@ -3,18 +3,23 @@ const Task = require('../models/Task');
 const Project = require('../models/Project');
 const User = require('../models/User');
 
-function getPeriodDateFilter(period) {
+function getPeriodDateFilter(period, weekOffset = 0) {
   const now = new Date();
   if (period === 'daily') {
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     return { createdAt: { $gte: startOfDay } };
   } else if (period === 'weekly') {
+    const offset = parseInt(weekOffset) || 0;
     const startOfWeek = new Date(now);
     const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1) + (offset * 7);
     startOfWeek.setDate(diff);
     startOfWeek.setHours(0, 0, 0, 0);
-    return { createdAt: { $gte: startOfWeek } };
+    
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
+    
+    return { createdAt: { $gte: startOfWeek, $lt: endOfWeek } };
   } else if (period === 'monthly') {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     return { createdAt: { $gte: startOfMonth } };
@@ -27,8 +32,8 @@ function getPeriodDateFilter(period) {
  * Task completion report (filterable by period, department, project, assignee)
  */
 exports.taskCompletionReport = asyncHandler(async (req, res) => {
-  const { period = 'all', projectId, assigneeId } = req.query;
-  const periodMatch = getPeriodDateFilter(period);
+  const { period = 'all', projectId, assigneeId, weekOffset } = req.query;
+  const periodMatch = getPeriodDateFilter(period, weekOffset);
 
   const matchStage = {
     'projectInfo.organization': req.user.organization,

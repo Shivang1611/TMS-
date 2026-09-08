@@ -82,8 +82,14 @@ export default function TaskDoneModal({ isOpen, onClose, task, onConfirm, isPend
   const assignees = task.assignees || [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 font-sans overflow-y-auto">
-      <div className="w-full max-w-lg rounded-2xl border border-surface-200 bg-white shadow-2xl overflow-hidden animate-slide-in my-auto max-h-[95vh] flex flex-col">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 font-sans overflow-y-auto"
+      onClick={(e) => { e.stopPropagation(); onClose(); }}
+    >
+      <div 
+        className="w-full max-w-lg rounded-2xl border border-surface-200 bg-white shadow-2xl overflow-hidden animate-slide-in my-auto max-h-[95vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-surface-100 flex items-center justify-between bg-surface-50 shrink-0">
           <div className="flex items-center gap-2.5">

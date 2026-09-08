@@ -180,7 +180,15 @@ exports.updateTask = asyncHandler(async (req, res) => {
 
   const oldDueDate = task.dueDate ? new Date(task.dueDate).getTime() : null;
 
-  for (const field of ['title', 'description', 'priority', 'milestone', 'dueDate', 'estimatedEffort', 'actualEffort', 'allowAssigneeToEdit', 'workScope', 'adminRating']) {
+  const isManager = ['Founder', 'Admin', 'Manager', 'Team Leader', 'Team Lead'].includes(req.user.role);
+  let allowedFields = ['title', 'description', 'priority', 'milestone', 'dueDate', 'estimatedEffort', 'actualEffort', 'allowAssigneeToEdit', 'workScope', 'adminRating'];
+
+  if (!isManager) {
+    // Regular employees who have edit access can only change the description and their actual effort
+    allowedFields = ['description', 'actualEffort'];
+  }
+
+  for (const field of allowedFields) {
     if (req.body[field] !== undefined) task[field] = req.body[field];
   }
   
@@ -224,7 +232,7 @@ exports.bulkUpdateStatus = asyncHandler(async (req, res) => {
 
   for (const task of tasks) {
     try {
-      const isManager = ['Founder', 'Admin', 'Manager', 'Team Leader'].includes(req.user.role);
+      const isManager = ['Founder', 'Admin', 'Manager', 'Team Leader', 'Team Lead'].includes(req.user.role);
 
       if (!isManager && !task.canTransitionTo(status)) {
         skipped++;
@@ -296,7 +304,7 @@ exports.updateTaskStatus = asyncHandler(async (req, res) => {
 
   const oldStatus = task.status;
 
-  const isManager = ['Founder', 'Admin', 'Manager', 'Team Leader'].includes(req.user.role);
+  const isManager = ['Founder', 'Admin', 'Manager', 'Team Leader', 'Team Lead'].includes(req.user.role);
 
   if (!isManager && !task.canTransitionTo(status)) {
     throw ApiError.badRequest(
@@ -305,7 +313,7 @@ exports.updateTaskStatus = asyncHandler(async (req, res) => {
   }
 
   if (status === 'Done') {
-    const allowedRoles = ['Founder', 'Admin', 'Manager', 'Team Leader'];
+    const allowedRoles = ['Founder', 'Admin', 'Manager', 'Team Leader', 'Team Lead'];
     if (!allowedRoles.includes(req.user.role)) {
       throw ApiError.forbidden('Only Managers or Team Leaders can mark a task as Done.');
     }
@@ -362,6 +370,11 @@ exports.assignTask = asyncHandler(async (req, res) => {
   const { assigneeIds } = req.body;
   const task = await Task.findOne({ _id: req.params.id, isDeleted: false });
   if (!task) throw ApiError.notFound('Task');
+
+  const allowedRoles = ['Founder', 'Admin', 'Manager', 'Team Leader', 'Team Lead'];
+  if (!allowedRoles.includes(req.user.role)) {
+    throw ApiError.forbidden('Only Managers or Team Leaders can assign or reassign tasks.');
+  }
 
   if (!assigneeIds || (Array.isArray(assigneeIds) && assigneeIds.length === 0)) {
     task.assignees = [];

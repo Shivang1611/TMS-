@@ -18,6 +18,21 @@ exports.inviteUser = asyncHandler(async (req, res) => {
     throw ApiError.badRequest('Email and password are required');
   }
 
+  // Validate Role permissions
+  if (['Founder', 'Admin'].includes(req.user.role)) {
+    // Can assign any role
+  } else if (['Manager', 'HR'].includes(req.user.role)) {
+    if (!['Team Lead', 'Employee'].includes(role)) {
+      throw ApiError.forbidden('Managers and HR can only assign Team Lead or Employee roles.');
+    }
+  } else if (req.user.role === 'Team Lead') {
+    if (role !== 'Employee') {
+      throw ApiError.forbidden('Team Leads can only assign Employee role.');
+    }
+  } else {
+    throw ApiError.forbidden('You do not have permission to invite users.');
+  }
+
   // Check if user already exists in this org
   const existingUser = await User.findOne({
     email: normalizedEmail,
@@ -79,6 +94,21 @@ exports.bulkInvite = asyncHandler(async (req, res) => {
     errors: [],
     users: [],
   };
+
+  // Validate Role permissions
+  if (['Founder', 'Admin'].includes(req.user.role)) {
+    // Can assign any role
+  } else if (['Manager', 'HR'].includes(req.user.role)) {
+    if (!['Team Lead', 'Employee'].includes(role)) {
+      throw ApiError.forbidden('Managers and HR can only assign Team Lead or Employee roles.');
+    }
+  } else if (req.user.role === 'Team Lead') {
+    if (role !== 'Employee') {
+      throw ApiError.forbidden('Team Leads can only assign Employee role.');
+    }
+  } else {
+    throw ApiError.forbidden('You do not have permission to invite users.');
+  }
 
   for (const email of emails) {
     const normalizedEmail = email.toLowerCase().trim();
@@ -151,6 +181,23 @@ exports.listUsers = asyncHandler(async (req, res) => {
     organization: req.user.organization,
     isDeleted: false,
   };
+
+  // Enforce visibility hierarchy
+  if (['Manager'].includes(req.user.role)) {
+    filter.role = { $in: ['Team Lead', 'Employee'] };
+    if (req.user.department) filter.department = req.user.department;
+  } else if (['HR'].includes(req.user.role)) {
+    filter.role = { $in: ['Team Lead', 'Employee'] };
+  } else if (req.user.role === 'Team Lead') {
+    filter.role = 'Employee';
+    if (req.user.teams && req.user.teams.length > 0) {
+      filter.teams = { $in: req.user.teams };
+    } else {
+      filter.teams = null; // TL not in any team sees no employees
+    }
+  } else if (req.user.role === 'Employee') {
+    filter._id = req.user._id; // Employees only see themselves in assignments
+  }
 
   // Apply optional filters
   const { role, departmentId, isActive, search } = req.query;

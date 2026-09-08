@@ -4,7 +4,7 @@ import { taskApi, commentApi, userApi } from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   X, Calendar, User, MessageSquare, Clock, Edit3, Check,
-  AlertCircle, ChevronRight, Send, Trash2, ArrowLeft, Award, Briefcase,
+  AlertCircle, ChevronRight, Send, Trash2, ArrowLeft, Award, Briefcase, Maximize2, Minimize2
 } from 'lucide-react';
 import { formatDate, getInitials } from '../../utils/helpers';
 import toast from 'react-hot-toast';
@@ -30,6 +30,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
   const [comment, setComment] = useState('');
   const [descDraft, setDescDraft] = useState('');
   const [isDescDirty, setIsDescDirty] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [showAssigneePicker, setShowAssigneePicker] = useState(false);
   const [showBlockedModal, setShowBlockedModal] = useState(false);
   const [showDoneModal, setShowDoneModal] = useState(false);
@@ -45,7 +46,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
 
   const task = data?.data;
 
-  const isManager = user?.role === 'Founder' || user?.role === 'Manager' || user?.role === 'Team Leader';
+  const isManager = ['Founder', 'Admin', 'Manager', 'Team Leader', 'Team Lead'].includes(user?.role);
   const canEdit = isManager || (task?.assignees?.some(a => a._id === user?._id) && task?.allowAssigneeToEdit && task?.status !== 'Done');
 
   useEffect(() => {
@@ -64,13 +65,59 @@ export default function TaskDetailModal({ taskId, onClose }) {
 
   const statusMutation = useMutation({
     mutationFn: (statusData) => taskApi.updateStatus(taskId, statusData),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      const updatedTask = res?.data;
+      if (updatedTask) {
+        // Immediately update the individual task cache
+        queryClient.setQueryData(['task', taskId], (old) => {
+          if (!old) return { success: true, data: updatedTask };
+          return {
+            ...old,
+            data: { ...old.data, ...updatedTask },
+          };
+        });
+
+        // Update all task list caches (prefix match covers ['tasks', params])
+        queryClient.setQueriesData({ queryKey: ['tasks'] }, (old) => {
+          if (!old?.data || !Array.isArray(old.data)) return old;
+          return {
+            ...old,
+            data: old.data.map((t) =>
+              (t._id === taskId || t._id?.toString() === taskId) ? { ...t, ...updatedTask } : t
+            ),
+          };
+        });
+
+        // Update my-tasks cache
+        queryClient.setQueriesData({ queryKey: ['my-tasks'] }, (old) => {
+          if (!old?.data || !Array.isArray(old.data)) return old;
+          return {
+            ...old,
+            data: old.data.map((t) =>
+              (t._id === taskId || t._id?.toString() === taskId) ? { ...t, ...updatedTask } : t
+            ),
+          };
+        });
+      }
+
+      // Force refetch to get fresh data from server
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       setShowBlockedModal(false);
-      toast.success('Status updated');
+      setShowDoneModal(false);
+      toast.success(`Status updated to ${updatedTask?.status || 'Done'}! ✓`);
     },
-    onError: (err) => toast.error(err.response?.data?.message || 'Failed to update status'),
+    onError: (err) => {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.errors?.[0]?.message ||
+        err?.message ||
+        'Failed to update status';
+      toast.error(msg);
+      setShowBlockedModal(false);
+      setShowDoneModal(false);
+    },
   });
 
   const updateTitleMutation = useMutation({
@@ -78,6 +125,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       toast.success('Title updated');
     },
     onError: (err) => toast.error(err.response?.data?.message || 'Failed to update title'),
@@ -88,6 +136,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       setIsDescDirty(false);
     }
   });
@@ -96,6 +145,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
     mutationFn: (allowEdit) => taskApi.update(taskId, { allowAssigneeToEdit: allowEdit }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       toast.success('Assignee edit access updated');
     },
     onError: (err) => toast.error(err.response?.data?.message || 'Failed to update access'),
@@ -105,6 +155,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
     mutationFn: () => taskApi.delete(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       toast.success('Task deleted');
       onClose();
     },
@@ -116,6 +167,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       toast.success('Work scope updated');
     },
     onError: (err) => toast.error(err.response?.data?.message || 'Failed to update scope'),
@@ -164,7 +216,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl bg-white h-full shadow-2xl overflow-y-auto p-6 space-y-6 animate-slide-left border-l border-surface-200"
+        className={`w-full bg-white h-full shadow-2xl overflow-y-auto p-6 space-y-6 animate-slide-left border-l border-surface-200 transition-all duration-300 ${isExpanded ? 'max-w-5xl' : 'max-w-2xl'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header / Close bar */}
@@ -193,6 +245,13 @@ export default function TaskDetailModal({ taskId, onClose }) {
               </button>
             )}
             <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1 rounded-lg text-surface-400 hover:text-surface-700 hover:bg-surface-100 transition-colors"
+              title={isExpanded ? "Collapse" : "Expand"}
+            >
+              {isExpanded ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+            </button>
+            <button
               onClick={onClose}
               className="p-1 rounded-lg text-surface-400 hover:text-surface-700 hover:bg-surface-100 transition-colors"
             >
@@ -211,7 +270,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
           <>
             {/* Notion Header Title */}
             <div>
-              {canEdit ? (
+              {isManager ? (
                 <input
                   type="text"
                   defaultValue={task.title}
@@ -246,8 +305,13 @@ export default function TaskDetailModal({ taskId, onClose }) {
                   Employee
                 </div>
                 <button
-                  onClick={() => setShowAssigneePicker(!showAssigneePicker)}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-amber-100/90 px-2.5 py-0.5 text-xs font-semibold text-amber-900 hover:bg-amber-200 transition-colors"
+                  onClick={() => isManager && setShowAssigneePicker(!showAssigneePicker)}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-xs font-semibold transition-colors ${
+                    isManager 
+                      ? 'bg-amber-100/90 text-amber-900 hover:bg-amber-200 cursor-pointer' 
+                      : 'bg-surface-100 text-surface-700 cursor-default'
+                  }`}
+                  disabled={!isManager}
                 >
                   {task.assignees && task.assignees.length > 0 
                     ? task.assignees.map(a => a.name).join(', ') 
@@ -388,8 +452,12 @@ export default function TaskDetailModal({ taskId, onClose }) {
                       if (s === 'Blocked') {
                         setShowBlockedModal(true);
                         setBlockedReason('');
-                      } else if (s === 'Done' && isManager) {
-                        setShowDoneModal(true);
+                      } else if (s === 'Done') {
+                        if (isManager) {
+                          setShowDoneModal(true);
+                        } else {
+                          toast.error('Only Managers or Team Leads can mark a task as Done.');
+                        }
                       } else {
                         statusMutation.mutate({ status: s });
                       }
@@ -406,7 +474,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
                     <option value="To Do" disabled={!isManager && task.status !== 'To Do' && !VALID_TRANSITIONS[task.status]?.includes('To Do')}>To Do</option>
                     <option value="In Progress" disabled={!isManager && task.status !== 'In Progress' && !VALID_TRANSITIONS[task.status]?.includes('In Progress')}>In Progress</option>
                     <option value="In Review" disabled={!isManager && task.status !== 'In Review' && !VALID_TRANSITIONS[task.status]?.includes('In Review')}>In Review</option>
-                    <option value="Done" disabled={!isManager && task.status !== 'Done' && !VALID_TRANSITIONS[task.status]?.includes('Done')}>Done</option>
+                    <option value="Done" disabled={!isManager && task.status !== 'Done'}>Done</option>
                     <option value="Blocked" disabled={!isManager && task.status !== 'Blocked' && !VALID_TRANSITIONS[task.status]?.includes('Blocked')}>Blocked</option>
                   </select>
                 </div>
@@ -487,7 +555,10 @@ export default function TaskDetailModal({ taskId, onClose }) {
       </div>
 
       {showBlockedModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={(e) => { e.stopPropagation(); setShowBlockedModal(false); setBlockedReason(''); }}
+        >
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 animate-fade-in" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 text-red-600 mb-4">
               <AlertCircle className="h-6 w-6" />
@@ -540,9 +611,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
           task={task}
           isPending={statusMutation.isPending}
           onConfirm={(payload) => {
-            statusMutation.mutate(payload, {
-              onSuccess: () => setShowDoneModal(false),
-            });
+            statusMutation.mutate(payload);
           }}
         />
       )}

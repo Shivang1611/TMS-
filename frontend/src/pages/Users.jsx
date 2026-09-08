@@ -13,6 +13,14 @@ import toast from 'react-hot-toast';
 export default function Users() {
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
+  const availableRoles = (() => {
+    const r = currentUser?.role;
+    if (['Founder', 'Admin'].includes(r)) return ['Founder', 'Admin', 'Manager', 'HR', 'Team Lead', 'Employee'];
+    if (['Manager', 'HR'].includes(r)) return ['Team Lead', 'Employee'];
+    if (r === 'Team Lead') return ['Employee'];
+    return [];
+  })();
+
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [showInvite, setShowInvite] = useState(false);
@@ -184,7 +192,7 @@ export default function Users() {
           />
         </div>
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 shrink-0">
-          {['', 'Founder', 'Admin', 'Manager', 'Team Lead', 'Employee'].map((r) => (
+          {['', ...availableRoles].map((r) => (
             <button
               key={r}
               onClick={() => setRoleFilter(r === roleFilter ? '' : r)}
@@ -605,10 +613,9 @@ export default function Users() {
                     <select value={bulkForm.role}
                       onChange={(e) => setBulkForm((f) => ({ ...f, role: e.target.value }))}
                       className="input-field pl-10 appearance-none">
-                      <option value="Admin">Admin</option>
-                      <option value="Manager">Manager</option>
-                      <option value="Team Lead">Team Lead</option>
-                      <option value="Employee">Employee</option>
+                      {availableRoles.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -753,10 +760,9 @@ export default function Users() {
                   <select value={editForm.role}
                     onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}
                     className="input-field pl-10 appearance-none">
-                    <option value="Admin">Admin</option>
-                    <option value="Manager">Manager</option>
-                    <option value="Team Lead">Team Lead</option>
-                    <option value="Employee">Employee</option>
+                    {availableRoles.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -950,10 +956,9 @@ export default function Users() {
                   <select value={inviteForm.role}
                     onChange={(e) => setInviteForm((f) => ({ ...f, role: e.target.value }))}
                     className="input-field pl-10 appearance-none">
-                    <option value="Admin">Admin</option>
-                    <option value="Manager">Manager</option>
-                    <option value="Team Lead">Team Lead</option>
-                    <option value="Employee">Employee</option>
+                    {availableRoles.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
                   </select>
                 </div>
               </div>

@@ -208,6 +208,8 @@ const updateTask = Joi.object({
   estimatedEffort: Joi.number().min(0).allow(null),
   actualEffort: Joi.number().min(0).allow(null),
   allowAssigneeToEdit: Joi.boolean(),
+  workScope: Joi.string().valid('Quick', 'Half Day', 'Full Day', 'Multi-Day').allow(null, ''),
+  adminRating: Joi.string().valid('Outstanding', 'Good', 'Needs Polish').allow(null, ''),
 });
 
 const updateTaskStatus = Joi.object({
@@ -217,6 +219,9 @@ const updateTaskStatus = Joi.object({
     then: Joi.required(),
     otherwise: Joi.allow(null, ''),
   }),
+  workScope: Joi.string().valid('Quick', 'Half Day', 'Full Day', 'Multi-Day').allow(null, ''),
+  adminRating: Joi.string().valid('Outstanding', 'Good', 'Needs Polish').allow(null, ''),
+  customMarks: Joi.number().min(0).allow(null, ''),
 });
 
 // ─── Comment ─────────────────────────────────────────────────────────────────
