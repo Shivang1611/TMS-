@@ -95,6 +95,21 @@ export default function NoteEditor({ initialContent, onSave, readOnly = false })
     }
   };
 
+  const handleRemoveImage = async () => {
+    const src = editor.getAttributes('image').src;
+    if (src) {
+      try {
+        setIsUploading(true);
+        await uploadApi.deleteImage(src);
+      } catch (err) {
+        console.error('Failed to delete image from server', err);
+      } finally {
+        setIsUploading(false);
+      }
+    }
+    editor.chain().focus().deleteSelection().run();
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -220,7 +235,7 @@ export default function NoteEditor({ initialContent, onSave, readOnly = false })
           {editor.isActive('image') && (
             <>
               <div className="w-px h-5 bg-surface-300 mx-1 shrink-0" />
-              <button onClick={() => editor.chain().focus().deleteSelection().run()} className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded flex items-center shrink-0 transition-colors">
+              <button onClick={handleRemoveImage} className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded flex items-center shrink-0 transition-colors">
                 <Trash2 className="h-3 w-3 mr-1"/> Remove Image
               </button>
             </>

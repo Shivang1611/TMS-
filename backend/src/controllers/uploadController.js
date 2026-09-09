@@ -8,6 +8,9 @@ const s3 = require('../utils/s3');
  * Upload an image file to Vultr S3 and return its accessible URL.
  */
 exports.uploadImage = asyncHandler(async (req, res) => {
+  console.log("Upload Image hit:", req.headers['content-type']);
+  console.log("req.file:", req.file);
+  console.log("req.body:", req.body);
   if (!req.file) {
     throw ApiError.badRequest('No image file uploaded');
   }

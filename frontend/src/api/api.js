@@ -6,8 +6,17 @@ export const authApi = {
   getMe: () => client.get('/auth/me').then((r) => r.data),
   updateMe: (data) => client.patch('/auth/me', data).then((r) => r.data),
   changePassword: (data) => client.post('/auth/change-password', data).then((r) => r.data),
-  uploadAvatar: (formData) =>
-    client.post('/auth/avatar', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
+  uploadAvatar: async (formData) => {
+    const token = localStorage.getItem('tms_token');
+    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/avatar`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Upload failed');
+    return data.data;
+  },
 };
 
 export const taskApi = {
@@ -113,8 +122,17 @@ export const auditLogApi = {
 };
 
 export const uploadApi = {
-  image: (formData) =>
-    client.post('/upload/image', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
+  image: async (formData) => {
+    const token = localStorage.getItem('tms_token');
+    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/upload/image`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Upload failed');
+    return data;
+  },
   deleteImage: (url) =>
     client.delete('/upload/image', { data: { url } }).then((r) => r.data),
 };
@@ -129,7 +147,16 @@ export const reminderApi = {
 export const documentApi = {
   list: (params) => client.get('/documents', { params }).then((r) => r.data),
   get: (id) => client.get(`/documents/${id}`).then((r) => r.data),
-  upload: (formData) =>
-    client.post('/documents/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
+  upload: async (formData) => {
+    const token = localStorage.getItem('tms_token');
+    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/documents/upload`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Upload failed');
+    return data;
+  },
   delete: (id) => client.delete(`/documents/${id}`).then((r) => r.data),
 };
