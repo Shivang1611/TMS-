@@ -77,10 +77,17 @@ exports.listProjects = asyncHandler(async (req, res) => {
   // Founder/Admin see all projects in the org
 
   // Apply optional query filters
-  const { status, departmentId, managerId } = req.query;
+  const { status, departmentId, managerId, search } = req.query;
   if (status) filter.status = status;
   if (departmentId) filter.department = departmentId;
   if (managerId) filter.manager = managerId;
+  if (search) {
+    filter.$or = [
+      ...(filter.$or || []),
+      { name: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } }
+    ];
+  }
 
   const projects = await Project.find(filter)
     .populate('manager', 'name email role')

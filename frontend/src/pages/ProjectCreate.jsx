@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { projectApi, userApi, deptApi, teamApi, documentApi } from '../api/api';
 import { useAuth } from '../context/AuthContext';
+import { useAgentContext } from '../context/AgentContext';
 import { Loader2, Calendar, Building2, User, FileText, ArrowLeft, Upload, X as XIcon, File as FileIcon } from 'lucide-react';
+import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 const NotionEditor = lazy(() => import('../components/editor/NotionEditor'));
@@ -23,6 +25,20 @@ export default function ProjectCreate() {
   });
   const [files, setFiles] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
+
+  const { setPageContext } = useAgentContext();
+
+  useEffect(() => {
+    setPageContext({
+      entityType: 'project',
+      entityId: null,
+      isFormView: true,
+      draftFields: form,
+    });
+    return () => {
+      setPageContext({ entityType: null, entityId: null, isFormView: false, draftFields: null });
+    };
+  }, [form, setPageContext]);
 
   const { data: userData } = useQuery({
     queryKey: ['users', 'all'],

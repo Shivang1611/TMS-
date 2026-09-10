@@ -56,7 +56,7 @@ const sendTemplateEmail = async ({ to, subject, template, context }) => {
   const html = compiledTemplate(context);
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || '"TMS Notifications" <noreply@tms.com>',
+    from: process.env.EMAIL_FROM || '"Taskora Notifications" <noreply@taskora.com>',
     to,
     subject,
     html,

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import AgentWidget from '../agent/AgentWidget';
 
 export default function AppLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -37,6 +38,9 @@ export default function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* AI Agent Widget — persists across all routes */}
+      <AgentWidget />
     </div>
   );
 }

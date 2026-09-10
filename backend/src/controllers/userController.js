@@ -307,11 +307,22 @@ exports.updateUser = asyncHandler(async (req, res) => {
     throw ApiError.notFound('User');
   }
 
+  if (['Manager', 'HR'].includes(req.user.role)) {
+    if (['Founder', 'Admin'].includes(targetUser.role)) {
+      throw ApiError.forbidden('You do not have permission to modify Founder or Admin accounts.');
+    }
+  }
+
   if (role) {
     // Cannot change the Founder's role
     if (targetUser.role === 'Founder' && role !== 'Founder') {
       throw ApiError.badRequest('Cannot change the role of the organization Founder');
     }
+    
+    if (['Manager', 'HR'].includes(req.user.role) && ['Founder', 'Admin'].includes(role)) {
+      throw ApiError.forbidden('You do not have permission to assign Founder or Admin roles.');
+    }
+    
     targetUser.role = role;
   }
   

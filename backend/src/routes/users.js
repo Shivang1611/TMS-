@@ -20,8 +20,8 @@ router.get('/:id/score', userController.getUserScore);
 // GET /api/users/:id — Get user details
 router.get('/:id', userController.getUser);
 
-// PATCH /api/users/:id — Update user details (Admin+)
-router.patch('/:id', authorize('Founder', 'Admin'), validate(validators.updateUser), userController.updateUser);
+// PATCH /api/users/:id — Update user details (Admin, Manager, HR+)
+router.patch('/:id', authorize('Founder', 'Admin', 'Manager', 'HR'), validate(validators.updateUser), userController.updateUser);
 
 // PATCH /api/users/:id/reset-password — Reset user password (Admin+)
 router.patch('/:id/reset-password', authorize('Founder', 'Admin'), validate(validators.resetPasswordAdmin), userController.resetPassword);

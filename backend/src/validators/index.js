@@ -138,7 +138,7 @@ const addTeamMembers = Joi.object({
 
 const createProject = Joi.object({
   name: Joi.string().trim().max(200).required(),
-  description: Joi.string().max(2000).allow(''),
+  description: Joi.string().max(20000).allow(''),
   departmentId: objectId.allow(null),
   managerId: objectId.required(),
   startDate: Joi.date().iso().allow(null),
@@ -154,7 +154,7 @@ const createProject = Joi.object({
 
 const updateProject = Joi.object({
   name: Joi.string().trim().max(200),
-  description: Joi.string().max(2000).allow(''),
+  description: Joi.string().max(20000).allow(''),
   departmentId: objectId.allow(null, ''),
   managerId: objectId,
   startDate: Joi.date().iso().allow(null, ''),
@@ -186,7 +186,7 @@ const updateMilestone = Joi.object({
 
 const createTask = Joi.object({
   title: Joi.string().trim().max(300).required(),
-  description: Joi.string().max(5000).allow(''),
+  description: Joi.string().max(20000).allow(''),
   priority: Joi.string().valid('Low', 'Medium', 'High', 'Critical').default('Medium'),
   milestoneId: objectId.allow(null),
   assigneeId: objectId.allow(null),
@@ -200,7 +200,7 @@ const createTask = Joi.object({
 
 const updateTask = Joi.object({
   title: Joi.string().trim().max(300),
-  description: Joi.string().max(5000).allow(''),
+  description: Joi.string().max(20000).allow(''),
   priority: Joi.string().valid('Low', 'Medium', 'High', 'Critical'),
   milestoneId: objectId.allow(null),
   assigneeId: objectId.allow(null),

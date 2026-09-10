@@ -12,6 +12,7 @@ import { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import ScoreBadge from '../common/ScoreBadge';
 import TaskDoneModal from './TaskDoneModal';
+import { useAgentContext } from '../../context/AgentContext';
 
 const NotionEditor = lazy(() => import('../editor/NotionEditor'));
 
@@ -26,6 +27,20 @@ const VALID_TRANSITIONS = {
 export default function TaskDetailModal({ taskId, onClose }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { setPageContext } = useAgentContext();
+
+  // Sync page context
+  useEffect(() => {
+    if (taskId) {
+      setPageContext({
+        entityType: 'task',
+        entityId: taskId,
+        isFormView: false,
+        draftFields: null,
+      });
+    }
+    return () => setPageContext(null);
+  }, [taskId, setPageContext]);
 
   const [comment, setComment] = useState('');
   const [descDraft, setDescDraft] = useState('');
@@ -578,7 +593,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
                   </Suspense>
                 </div>
               ) : task.description ? (
-                <div className="prose dark:prose-invert prose-sm max-w-none text-surface-800 leading-relaxed bg-surface-50/60 p-5 rounded-xl border border-surface-100">
+                <div className="prose dark:prose-invert prose-sm max-w-none text-surface-800 leading-relaxed bg-surface-50/60 p-5 rounded-xl border border-surface-100 [&_li_p]:m-0 [&_ul]:my-2 [&_ol]:my-2">
                   <div dangerouslySetInnerHTML={{ __html: task.description }} />
                 </div>
               ) : (

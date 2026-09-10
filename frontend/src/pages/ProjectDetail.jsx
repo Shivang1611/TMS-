@@ -8,6 +8,8 @@ import { useRef } from 'react';
 
 import { projectApi, milestoneApi, userApi, deptApi, documentApi } from '../api/api';
 import { useAuth } from '../context/AuthContext';
+import { useAgentContext } from '../context/AgentContext';
+import { useEffect } from 'react';
 
 const NotionEditor = lazy(() => import('../components/editor/NotionEditor'));
 
@@ -15,6 +17,7 @@ export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { setPageContext } = useAgentContext();
   const queryClient = useQueryClient();
   const [showSettings, setShowSettings] = useState(false);
   const [settingsForm, setSettingsForm] = useState({
@@ -28,6 +31,26 @@ export default function ProjectDetail() {
     name: '', description: '', departmentId: '', managerId: '',
     startDate: '', endDate: '', status: 'Active',
   });
+
+  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [milestoneForm, setMilestoneForm] = useState({
+    name: '', description: '', dueDate: '',
+  });
+  const [viewMilestone, setViewMilestone] = useState(null);
+
+  useEffect(() => {
+    if (id) {
+      setPageContext({
+        entityType: 'project',
+        entityId: id,
+        isFormView: false,
+        draftFields: null,
+      });
+    }
+    return () => {
+      setPageContext({ entityType: null, entityId: null, isFormView: false, draftFields: null });
+    };
+  }, [id, setPageContext]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['project', id],
@@ -115,6 +138,31 @@ export default function ProjectDetail() {
       navigate('/projects');
     },
     onError: (err) => toast.error(err.response?.data?.message || 'Failed to delete project'),
+  });
+
+  const createMilestoneMutation = useMutation({
+    mutationFn: (data) => milestoneApi.create(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['milestones', id] });
+      setShowMilestoneModal(false);
+      setMilestoneForm({ name: '', description: '', dueDate: '' });
+      toast.success('Milestone created successfully');
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed to create milestone'),
+  });
+
+  const handleCreateMilestone = (e) => {
+    e.preventDefault();
+    createMilestoneMutation.mutate(milestoneForm);
+  };
+
+  const deleteMilestoneMutation = useMutation({
+    mutationFn: (milestoneId) => milestoneApi.delete(milestoneId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['milestones', id] });
+      toast.success('Milestone deleted');
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed to delete milestone'),
   });
 
   if (isLoading) {
@@ -254,10 +302,17 @@ export default function ProjectDetail() {
       {/* Milestones */}
       {!(isEmployee && vs.hideMilestones) && (
         <div className="card">
-          <div className="mb-4 flex items-center gap-2">
-          <ListTodo className="h-5 w-5 text-surface-400" />
-          <h2 className="text-lg font-semibold text-surface-900">Milestones ({milestones.length})</h2>
-        </div>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ListTodo className="h-5 w-5 text-surface-400" />
+              <h2 className="text-lg font-semibold text-surface-900">Milestones ({milestones.length})</h2>
+            </div>
+            {canEdit && (
+              <button onClick={() => setShowMilestoneModal(true)} className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5">
+                <ListTodo className="h-4 w-4" /> Add Milestone
+              </button>
+            )}
+          </div>
         {milestones.length === 0 ? (
           <p className="text-sm text-surface-400 text-center py-8">No milestones defined yet</p>
         ) : (
@@ -268,11 +323,16 @@ export default function ProjectDetail() {
                   <th className="px-4 py-3 border-b border-surface-200">Milestone Name</th>
                   <th className="px-4 py-3 border-b border-surface-200">Due Date</th>
                   <th className="px-4 py-3 border-b border-surface-200">Status</th>
+                  {canEdit && <th className="px-4 py-3 border-b border-surface-200 text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-200 bg-white">
                 {milestones.map((ms) => (
-                  <tr key={ms._id} className="hover:bg-surface-50 transition-colors">
+                  <tr 
+                    key={ms._id} 
+                    className="hover:bg-surface-50 transition-colors group cursor-pointer"
+                    onClick={() => setViewMilestone(ms)}
+                  >
                     <td className="px-4 py-3 font-medium text-surface-900 flex items-center gap-3">
                       <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
                         ms.status === 'Completed' ? 'bg-emerald-100' : 'bg-surface-100'
@@ -294,6 +354,22 @@ export default function ProjectDetail() {
                         {ms.status}
                       </span>
                     </td>
+                    {canEdit && (
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Are you sure you want to delete this milestone?')) {
+                              deleteMilestoneMutation.mutate(ms._id);
+                            }
+                          }}
+                          className="p-1.5 text-surface-400 hover:text-red-600 rounded-md hover:bg-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Delete Milestone"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -565,6 +641,125 @@ export default function ProjectDetail() {
           </div>
         </div>
       )}
+      {/* Milestone Modal */}
+      {showMilestoneModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-900/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-surface-900">Add Milestone</h2>
+              <button onClick={() => setShowMilestoneModal(false)} className="rounded-md p-2 hover:bg-surface-100">
+                <X className="h-5 w-5 text-surface-500" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateMilestone} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-surface-700">Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={milestoneForm.name}
+                  onChange={(e) => setMilestoneForm({ ...milestoneForm, name: e.target.value })}
+                  className="w-full rounded-xl border border-surface-200 px-4 py-2.5 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-surface-700">Description</label>
+                <textarea
+                  value={milestoneForm.description}
+                  onChange={(e) => setMilestoneForm({ ...milestoneForm, description: e.target.value })}
+                  className="w-full rounded-xl border border-surface-200 px-4 py-2.5 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 min-h-[100px]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-surface-700">Due Date</label>
+                <input
+                  type="date"
+                  value={milestoneForm.dueDate}
+                  onChange={(e) => setMilestoneForm({ ...milestoneForm, dueDate: e.target.value })}
+                  className="w-full rounded-xl border border-surface-200 px-4 py-2.5 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                />
+              </div>
+              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-surface-100">
+                <button
+                  type="button"
+                  onClick={() => setShowMilestoneModal(false)}
+                  className="btn-ghost"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createMilestoneMutation.isPending}
+                  className="btn-primary min-w-[120px]"
+                >
+                  {createMilestoneMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'Add Milestone'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Milestone Modal */}
+      {viewMilestone && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-900/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-surface-900 flex items-center gap-2">
+                <ListTodo className="h-6 w-6 text-primary-500" />
+                Milestone Details
+              </h2>
+              <button onClick={() => setViewMilestone(null)} className="rounded-md p-2 hover:bg-surface-100">
+                <X className="h-5 w-5 text-surface-500" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-surface-500 uppercase tracking-wider mb-1">Name</h3>
+                <p className="text-lg font-medium text-surface-900">{viewMilestone.name}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-surface-500 uppercase tracking-wider mb-1">Due Date</h3>
+                  <p className="font-medium text-surface-900">{viewMilestone.dueDate ? formatDate(viewMilestone.dueDate) : '-'}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-surface-500 uppercase tracking-wider mb-1">Status</h3>
+                  <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${
+                    viewMilestone.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
+                    viewMilestone.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                    viewMilestone.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {viewMilestone.status}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-surface-500 uppercase tracking-wider mb-1">Description</h3>
+                <div className="bg-surface-50 p-4 rounded-xl border border-surface-200 min-h-[100px]">
+                  {viewMilestone.description ? (
+                    <div 
+                      className="rich-text text-surface-700"
+                      dangerouslySetInnerHTML={{ __html: viewMilestone.description }}
+                    />
+                  ) : (
+                    <p className="text-surface-400 italic">No description provided.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-surface-100">
+              <button onClick={() => setViewMilestone(null)} className="btn-secondary min-w-[100px]">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

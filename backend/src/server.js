@@ -74,6 +74,7 @@ app.use('/api/activities', authenticate, require('./routes/activities'));
 app.use('/api/audit-logs', authenticate, require('./routes/auditLogs'));
 app.use('/api/upload', authenticate, require('./routes/uploads'));
 app.use('/api/reminders', authenticate, require('./routes/reminderRoutes'));
+app.use('/api/agent', authenticate, require('./routes/agent'));
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

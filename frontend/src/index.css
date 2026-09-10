@@ -149,13 +149,16 @@
     @apply text-lg font-bold mb-2 mt-4 text-surface-900;
   }
   .rich-text ul {
-    @apply list-disc list-inside mb-4 pl-4;
+    @apply list-disc list-outside mb-4 ml-6;
   }
   .rich-text ol {
-    @apply list-decimal list-inside mb-4 pl-4;
+    @apply list-decimal list-outside mb-4 ml-6;
   }
   .rich-text li {
     @apply mb-1;
+  }
+  .rich-text li p {
+    @apply m-0;
   }
   .rich-text blockquote {
     @apply border-l-4 border-surface-300 pl-4 italic text-surface-600 mb-4 py-1;

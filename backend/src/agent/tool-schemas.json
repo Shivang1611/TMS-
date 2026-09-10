@@ -1,0 +1,743 @@
+[
+  {
+    "name": "getMyTasks",
+    "description": "Get the list of tasks assigned to the currently logged-in user. Supports filtering by status.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "To Do",
+            "In Progress",
+            "In Review",
+            "Done",
+            "Blocked"
+          ],
+          "description": "Optional: filter tasks by status"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getTaskDetails",
+    "description": "Get detailed information about a specific task by its ID.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "description": "The ID of the task to retrieve"
+        }
+      },
+      "required": [
+        "taskId"
+      ]
+    }
+  },
+  {
+    "name": "getUserTasks",
+    "description": "Get the tasks assigned to a specific user. Employees can only see their own tasks.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "targetUserId": {
+          "type": "string",
+          "description": "The ID of the user whose tasks to retrieve"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "To Do",
+            "In Progress",
+            "In Review",
+            "Done",
+            "Blocked"
+          ],
+          "description": "Optional: filter by status"
+        }
+      },
+      "required": [
+        "targetUserId"
+      ]
+    }
+  },
+  {
+    "name": "getUnassignedMembers",
+    "description": "Get a list of team or department members who have no active tasks assigned.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "string",
+          "description": "ID of the team to check (provide either teamId or departmentId)"
+        },
+        "departmentId": {
+          "type": "string",
+          "description": "ID of the department to check"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getOverloadedMembers",
+    "description": "Get a list of team or department members who have more active tasks than the specified threshold.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "string",
+          "description": "ID of the team (provide either teamId or departmentId)"
+        },
+        "departmentId": {
+          "type": "string",
+          "description": "ID of the department"
+        },
+        "threshold": {
+          "type": "number",
+          "description": "Number of tasks above which a member is considered overloaded (default: 5)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getUpcomingDeadlines",
+    "description": "Get tasks with deadlines approaching within a given number of days.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": [
+            "self",
+            "team",
+            "department",
+            "org"
+          ],
+          "description": "Scope of deadlines to check. Clamped server-side to what the user's role allows."
+        },
+        "days": {
+          "type": "number",
+          "description": "Number of days ahead to look (default: 7)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getOverdueTasks",
+    "description": "Get tasks that have passed their due date and are not yet Done.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": [
+            "self",
+            "team",
+            "department",
+            "org"
+          ],
+          "description": "Scope of overdue tasks to fetch. Clamped server-side to what the role allows."
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getProjectStatus",
+    "description": "Get the status summary of a specific project including milestone progress and task counts.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "description": "The ID of the project"
+        }
+      },
+      "required": [
+        "projectId"
+      ]
+    }
+  },
+  {
+    "name": "getTeamDashboard",
+    "description": "Get dashboard data for a specific team — task stats, member workload, and progress.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "string",
+          "description": "ID of the team (optional — defaults to requester's team)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getDepartmentDashboard",
+    "description": "Get dashboard data for a specific department — team summaries, throughput, and task status.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "departmentId": {
+          "type": "string",
+          "description": "ID of the department (optional — defaults to requester's department)"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getOrgDashboard",
+    "description": "Get the organisation-wide dashboard with overall task completion, active projects, and team summaries.",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "getWorkloadDashboard",
+    "description": "Get the workload dashboard showing task distribution and member capacity.",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "getTaskCompletionReport",
+    "description": "Get a report of completed tasks with scores, scopes, and ratings within a date range.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "dateFrom": {
+          "type": "string",
+          "description": "ISO date string for the start of the report window"
+        },
+        "dateTo": {
+          "type": "string",
+          "description": "ISO date string for the end of the report window"
+        },
+        "assigneeId": {
+          "type": "string",
+          "description": "Optional: filter by a specific employee"
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Optional: filter by project"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getProjectProgressReport",
+    "description": "Get a report showing progress across projects — milestones hit, tasks remaining, and delays.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "description": "Optional: scope to one project"
+        },
+        "departmentId": {
+          "type": "string",
+          "description": "Optional: scope to a department"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "getThroughputReport",
+    "description": "Get the department throughput report showing task velocity and completion rates.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "departmentId": {
+          "type": "string",
+          "description": "Optional: scope to a department"
+        },
+        "dateFrom": {
+          "type": "string",
+          "description": "ISO date string start"
+        },
+        "dateTo": {
+          "type": "string",
+          "description": "ISO date string end"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "assignTask",
+    "description": "Assign a task to a user. HR can only assign to Employees. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "description": "The ID of the task to assign"
+        },
+        "assigneeId": {
+          "type": "string",
+          "description": "The ID of the user to assign the task to"
+        }
+      },
+      "required": [
+        "taskId",
+        "assigneeId"
+      ]
+    }
+  },
+  {
+    "name": "createTask",
+    "description": "Create a new task in a project. Team Leads can only create tasks in projects they are assigned to. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "description": "The ID of the project to create the task in"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the task"
+        },
+        "assigneeId": {
+          "type": "string",
+          "description": "Optional: ID of the user to assign the task to"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Optional: ISO date string for when the task is due"
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "Low",
+            "Medium",
+            "High",
+            "Critical"
+          ],
+          "description": "Optional: task priority (default: Medium)"
+        }
+      },
+      "required": [
+        "projectId",
+        "title"
+      ]
+    }
+  },
+  {
+    "name": "updateTaskStatus",
+    "description": "Update the status of a task. Employees can only update status on tasks assigned to them. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "description": "The ID of the task"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "To Do",
+            "In Progress",
+            "In Review",
+            "Done",
+            "Blocked"
+          ],
+          "description": "The new status"
+        },
+        "blockedReason": {
+          "type": "string",
+          "description": "Required when status is Blocked"
+        }
+      },
+      "required": [
+        "taskId",
+        "status"
+      ]
+    }
+  },
+  {
+    "name": "bulkUpdateTaskStatus",
+    "description": "Update the status of multiple tasks at once. Manager/Admin/Founder only. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "taskIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of task IDs to update"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "To Do",
+            "In Progress",
+            "In Review",
+            "Done",
+            "Blocked"
+          ],
+          "description": "The new status for all specified tasks"
+        }
+      },
+      "required": [
+        "taskIds",
+        "status"
+      ]
+    }
+  },
+  {
+    "name": "deleteTask",
+    "description": "Delete a task permanently. Requires type-to-confirm with the task title.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "description": "The ID of the task to delete"
+        }
+      },
+      "required": [
+        "taskId"
+      ]
+    }
+  },
+  {
+    "name": "createProject",
+    "description": "Create a new project. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The project name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional project description"
+        },
+        "managerId": {
+          "type": "string",
+          "description": "ID of the user who will manage this project"
+        }
+      },
+      "required": [
+        "name",
+        "managerId"
+      ]
+    }
+  },
+  {
+    "name": "updateProject",
+    "description": "Update an existing project's details. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "description": "The ID of the project"
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional new name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional new description"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Active",
+            "On Hold",
+            "Completed",
+            "Cancelled"
+          ],
+          "description": "Optional new status"
+        }
+      },
+      "required": [
+        "projectId"
+      ]
+    }
+  },
+  {
+    "name": "deleteProject",
+    "description": "Delete a project permanently. Requires type-to-confirm with the project name.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "description": "The ID of the project to delete"
+        }
+      },
+      "required": [
+        "projectId"
+      ]
+    }
+  },
+  {
+    "name": "createMilestone",
+    "description": "Create a new milestone in a project. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "description": "The project to add the milestone to"
+        },
+        "name": {
+          "type": "string",
+          "description": "Milestone name"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Optional ISO due date"
+        }
+      },
+      "required": [
+        "projectId",
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "addRemoveTeamMember",
+    "description": "Add or remove a user from a team. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "teamId": {
+          "type": "string",
+          "description": "The team to modify"
+        },
+        "userId": {
+          "type": "string",
+          "description": "The user to add or remove"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "add",
+            "remove"
+          ],
+          "description": "Whether to add or remove the member"
+        }
+      },
+      "required": [
+        "teamId",
+        "userId",
+        "action"
+      ]
+    }
+  },
+  {
+    "name": "inviteUser",
+    "description": "Invite a new user to the organisation. HR can only invite with the Employee role. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Email address of the user to invite"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the new user"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "Admin",
+            "Manager",
+            "HR",
+            "Team Lead",
+            "Employee"
+          ],
+          "description": "Role to assign. HR can only use 'Employee'."
+        },
+        "password": {
+          "type": "string",
+          "description": "Initial password for the new user"
+        }
+      },
+      "required": [
+        "email",
+        "name",
+        "role",
+        "password"
+      ]
+    }
+  },
+  {
+    "name": "bulkInviteUser",
+    "description": "Invite multiple users at once. HR can only invite Employees. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "emails": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of email addresses"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "Admin",
+            "Manager",
+            "HR",
+            "Team Lead",
+            "Employee"
+          ],
+          "description": "Role for all users. HR can only use 'Employee'."
+        },
+        "password": {
+          "type": "string",
+          "description": "Initial password for all users"
+        }
+      },
+      "required": [
+        "emails",
+        "role",
+        "password"
+      ]
+    }
+  },
+  {
+    "name": "resetPassword",
+    "description": "Reset a user's password. Admin/Founder only. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID of the user to reset password for"
+        },
+        "newPassword": {
+          "type": "string",
+          "description": "The new password to set"
+        }
+      },
+      "required": [
+        "userId",
+        "newPassword"
+      ]
+    }
+  },
+  {
+    "name": "deactivateUser",
+    "description": "Deactivate a user account (they will not be able to log in). Admin/Founder only. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID of the user to deactivate"
+        }
+      },
+      "required": [
+        "userId"
+      ]
+    }
+  },
+  {
+    "name": "reactivateUser",
+    "description": "Reactivate a previously deactivated user account. Admin/Founder only. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID of the user to reactivate"
+        }
+      },
+      "required": [
+        "userId"
+      ]
+    }
+  },
+  {
+    "name": "deleteUser",
+    "description": "Permanently delete a user from the organisation. Admin/Founder only. Requires type-to-confirm with the user's name.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID of the user to delete"
+        }
+      },
+      "required": [
+        "userId"
+      ]
+    }
+  },
+  {
+    "name": "addComment",
+    "description": "Add a comment to a task. Requester must have read access to the task. Requires confirmation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "description": "ID of the task to comment on"
+        },
+        "text": {
+          "type": "string",
+          "description": "The comment text"
+        }
+      },
+      "required": [
+        "taskId",
+        "text"
+      ]
+    }
+  },
+  {
+    "name": "searchUsers",
+    "description": "Search for users in the organization by name or email to find their User ID.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "searchQuery": {
+          "type": "string",
+          "description": "The name or email of the user to search for"
+        }
+      },
+      "required": [
+        "searchQuery"
+      ]
+    }
+  },
+  {
+    "name": "searchProjects",
+    "description": "Search for projects in the organization by name to find their Project ID.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "searchQuery": {
+          "type": "string",
+          "description": "The name of the project to search for"
+        }
+      },
+      "required": [
+        "searchQuery"
+      ]
+    }
+  }
+]

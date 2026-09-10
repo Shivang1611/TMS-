@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { taskApi, commentApi, documentApi, userApi } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import { useTaskSocket } from '../context/SocketContext';
+import { useAgentContext } from '../context/AgentContext';
 import {
   ArrowLeft, Clock, User, Calendar, Flag, GitBranch,
   MessageSquare, Send, Trash2, CheckCircle2,
@@ -40,6 +41,7 @@ export default function TaskDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { setPageContext } = useAgentContext();
   const { joinTask, leaveTask } = useTaskSocket();
   const [comment, setComment] = useState('');
   const [descDraft, setDescDraft] = useState('');
@@ -56,6 +58,20 @@ export default function TaskDetail() {
       blockedInputRef.current?.focus();
     }
   }, [showBlockedModal]);
+
+  useEffect(() => {
+    if (id) {
+      setPageContext({
+        entityType: 'task',
+        entityId: id,
+        isFormView: false,
+        draftFields: null,
+      });
+    }
+    return () => {
+      setPageContext({ entityType: null, entityId: null, isFormView: false, draftFields: null });
+    };
+  }, [id, setPageContext]);
 
   useEffect(() => {
     joinTask(id);
@@ -583,7 +599,7 @@ export default function TaskDetail() {
             </Suspense>
           </div>
         ) : task.description ? (
-          <div className="prose dark:prose-invert prose-sm max-w-none text-surface-800 leading-relaxed bg-white p-6 rounded-2xl border border-surface-200 shadow-sm">
+          <div className="prose dark:prose-invert prose-sm max-w-none text-surface-800 leading-relaxed bg-white p-6 rounded-2xl border border-surface-200 shadow-sm [&_li_p]:m-0 [&_ul]:my-2 [&_ol]:my-2">
             <div dangerouslySetInnerHTML={{ __html: task.description }} />
           </div>
         ) : (

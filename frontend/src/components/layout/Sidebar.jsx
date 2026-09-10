@@ -62,7 +62,7 @@ export default function Sidebar({ collapsed, onToggle }) {
             <div className="flex shrink-0 h-8 w-8 items-center justify-center rounded-lg bg-primary-600">
               <Building2 className="h-4 w-4 text-white" />
             </div>
-            <span className="text-lg font-bold text-surface-900 truncate">TMS</span>
+            <span className="text-lg font-bold text-surface-900 truncate">Taskora</span>
           </div>
         )}
         

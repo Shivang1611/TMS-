@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { taskApi, projectApi, userApi, teamApi } from '../api/api';
 import { useAuth } from '../context/AuthContext';
+import { useAgentContext } from '../context/AgentContext';
 import {
   ArrowLeft, Flag, User, Calendar, Loader2, Plus,
   AlignLeft, Clock, Users, Briefcase,
@@ -36,6 +37,20 @@ export default function TaskCreate() {
     estimatedEffort: '7.5', 
     allowAssigneeToEdit: false,
   });
+
+  const { setPageContext } = useAgentContext();
+
+  useEffect(() => {
+    setPageContext({
+      entityType: 'task',
+      entityId: null,
+      isFormView: true,
+      draftFields: form,
+    });
+    return () => {
+      setPageContext({ entityType: null, entityId: null, isFormView: false, draftFields: null });
+    };
+  }, [form, setPageContext]);
 
   const { data: projectsData } = useQuery({
     queryKey: ['projects', 'active'],

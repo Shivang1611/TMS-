@@ -38,9 +38,10 @@ export default function Login() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-200">
               <Building2 className="h-5 w-5 text-white" />
             </div>
-            <span className="text-2xl font-bold text-surface-900">TMS</span>
+            <span className="text-2xl font-bold text-surface-900">Taskora</span>
           </div>
-          <h2 className="mt-8 text-2xl font-bold text-surface-900">Welcome back</h2>
+          <p className="mt-1 text-sm font-medium text-primary-600">AI-Powered Enterprise Task Management</p>
+          <h2 className="mt-6 text-2xl font-bold text-surface-900">Welcome back</h2>
           <p className="mt-2 text-sm text-surface-500">
             Sign in to your account to continue.
           </p>

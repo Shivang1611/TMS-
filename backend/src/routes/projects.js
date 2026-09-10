@@ -33,7 +33,7 @@ router.get('/:projectId/milestones', milestoneController.listMilestonesByProject
 // ─── Nested Tasks under Project ──────────────────────────────────────────────
 
 // POST /api/projects/:projectId/tasks — Create task in project (Manager/Team Lead)
-router.post('/:projectId/tasks', authorize('Founder', 'Admin', 'Manager', 'Team Lead'), validate(validators.createTask), taskController.createTask);
+router.post('/:projectId/tasks', authorize('Founder', 'Admin', 'Manager', 'Team Lead', 'HR'), validate(validators.createTask), taskController.createTask);
 
 // GET /api/projects/:projectId/tasks — List tasks for a project
 router.get('/:projectId/tasks', taskController.listTasksByProject);

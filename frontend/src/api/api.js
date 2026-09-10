@@ -92,6 +92,8 @@ export const searchApi = {
 export const milestoneApi = {
   listByProject: (projectId) => client.get(`/projects/${projectId}/milestones`).then((r) => r.data),
   get: (id) => client.get(`/milestones/${id}`).then((r) => r.data),
+  create: (projectId, data) => client.post(`/projects/${projectId}/milestones`, data).then((r) => r.data),
+  delete: (id) => client.delete(`/milestones/${id}`).then((r) => r.data),
 };
 
 export const teamApi = {

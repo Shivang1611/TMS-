@@ -22,6 +22,8 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Notes = lazy(() => import('./pages/Notes'));
 
+import { AgentProvider } from './context/AgentContext';
+
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) {
@@ -79,7 +81,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+      <Route element={<ProtectedRoute><AgentProvider><AppLayout /></AgentProvider></ProtectedRoute>}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/my-tasks" element={<MyTasks />} />
         <Route path="/tasks" element={<ManagerRoute><Tasks /></ManagerRoute>} />
