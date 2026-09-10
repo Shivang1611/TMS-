@@ -143,7 +143,7 @@ export default function AgentWidget() {
       id: 'welcome',
       role: 'assistant',
       type: 'text',
-      content: `Hi ${user?.name?.split(' ')[0] || 'there'}! I'm Taskora AI. I can help you check tasks, view reports, and manage your work. What would you like to do?`,
+      content: `Hi ${user?.name?.split(' ')[0] || 'there'}! I'm TaskBuddy AI. I can help you check tasks, view reports, and manage your work. What would you like to do?`,
     },
   ]);
   const [input, setInput] = useState('');
@@ -355,7 +355,7 @@ export default function AgentWidget() {
               </div>
               <div>
                 <p className="text-sm font-semibold leading-none flex items-center gap-1.5">
-                  Taskora AI
+                  TaskBuddy AI
                   <span className="px-1.5 py-0.5 rounded-full bg-primary-800 text-[9px] font-bold tracking-wider text-primary-100 uppercase">Enterprise</span>
                 </p>
                 <p className="text-[10px] text-primary-200 mt-0.5">{user.role} • Secure Mode</p>
@@ -407,7 +407,7 @@ export default function AgentWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask Taskora anything about your tasks..."
+                placeholder="Ask TaskBuddy anything about your tasks..."
                 rows={1}
                 disabled={isLoading || !!pendingConfirm}
                 className="flex-1 resize-none rounded-xl border border-surface-200 bg-surface-50 px-3 py-2 text-sm text-surface-800 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent disabled:opacity-50 transition-all"
@@ -445,8 +445,8 @@ export default function AgentWidget() {
             ? 'bg-surface-700 hover:bg-surface-800 rotate-0'
             : 'bg-primary-600 hover:bg-primary-700 hover:scale-105'
         }`}
-        title={isOpen ? 'Close Taskora AI' : 'Ask Taskora'}
-        aria-label="Taskora AI"
+        title={isOpen ? 'Close TaskBuddy AI' : 'Ask TaskBuddy'}
+        aria-label="TaskBuddy AI"
       >
         {isOpen ? (
           <X className="h-5 w-5 text-white" />
