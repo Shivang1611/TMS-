@@ -15,7 +15,7 @@ const axios = require('axios');
 const AgentAuditLog = require('../models/AgentAuditLog');
 const { User, Task, Project, Team } = require('../models');
 
-const TMS_API_BASE = process.env.TMS_API_BASE || 'http://localhost:3000/api';
+const TMS_API_BASE = (process.env.TMS_API_BASE || 'http://localhost:3000/api').replace(/\/+$/, '');
 
 // ─── Internal TMS API client using the user's own token ───────────────────────
 

@@ -22,21 +22,38 @@ function truncateResult(result, maxChars = 12000) {
   let str = JSON.stringify(result);
   if (!str || str.length <= maxChars) return str || 'null';
   if (Array.isArray(result)) {
-    const sliced = result.slice(0, 15);
-    return JSON.stringify({ 
-      note: `Results truncated due to size limit. Showing 15 out of ${result.length} items.`, 
-      data: sliced 
-    });
+    for (let i = 15; i > 0; i--) {
+      const sliced = result.slice(0, i);
+      const slicedStr = JSON.stringify({ 
+        note: `Results truncated due to size limit. Showing ${i} out of ${result.length} items.`, 
+        data: sliced 
+      });
+      if (slicedStr.length <= maxChars) return slicedStr;
+    }
   }
   return str.substring(0, maxChars) + '... [TRUNCATED]';
 }
 
-const LLAMA_API_KEY = process.env.LLAMA_API_KEY;
+const rawKeys = (process.env.LLAMA_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
 const LLAMA_BASE_URL = process.env.LLAMA_BASE_URL || 'https://api.llama.com/v1';
 const LLAMA_MODEL = process.env.LLAMA_MODEL || 'meta-llama/Llama-3.3-70B-Instruct';
 
-if (!LLAMA_API_KEY) {
+if (rawKeys.length === 0) {
   console.error('[Agent] CRITICAL: LLAMA_API_KEY is not set. The agent will refuse all requests.');
+}
+
+let currentKeyIndex = 0;
+
+function getLlamaApiKey() {
+  if (rawKeys.length === 0) return null;
+  return rawKeys[currentKeyIndex];
+}
+
+function rotateLlamaApiKey() {
+  if (rawKeys.length > 1) {
+    currentKeyIndex = (currentKeyIndex + 1) % rawKeys.length;
+    console.log(`[Agent] Rate limit hit. Rotated to API key index ${currentKeyIndex}`);
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,21 +92,34 @@ async function callLlama(messages, tools, retryCount = 0) {
     max_tokens: 1024,
   };
 
-  const response = await axios.post(
-    `${LLAMA_BASE_URL}/chat/completions`,
-    body,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${LLAMA_API_KEY}`,
-      },
-      timeout: 30000,
-    }
-  );
+  const apiKey = getLlamaApiKey();
 
-  const choice = response.data?.choices?.[0];
-  if (!choice) throw new Error('No choices returned from Groq/Llama API');
-  return choice.message;
+  try {
+    const response = await axios.post(
+      `${LLAMA_BASE_URL}/chat/completions`,
+      body,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        timeout: 30000,
+      }
+    );
+
+    const choice = response.data?.choices?.[0];
+    if (!choice) throw new Error('No choices returned from Groq/Llama API');
+    return choice.message;
+  } catch (err) {
+    const maxRetries = rawKeys.length > 1 ? rawKeys.length + 1 : 2;
+    if (err.response?.status === 429 && retryCount < maxRetries) {
+      rotateLlamaApiKey();
+      const delay = rawKeys.length > 1 ? 500 : 2000 * (retryCount + 1);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return callLlama(messages, tools, retryCount + 1);
+    }
+    throw err;
+  }
 }
 
 // Validate tool call arguments against schema
@@ -119,6 +149,7 @@ IMPORTANT RULES:
 4. If multiple users share the same name, ask the user to clarify which one (by email or role) before proceeding.
 5. Always describe what you are about to do before calling a write tool, so the user can confirm.
 6. Be concise and friendly. Format responses clearly.
+7. CRITICAL UI CONSTRAINT: NEVER use markdown tables to format data. The chat interface does not support them and the UI will break. ALWAYS use bulleted lists instead.
 
 Current user: ${user.name} | Role: ${user.role} | Organisation ID: ${user.organization}`;
 }
@@ -127,18 +158,18 @@ Current user: ${user.name} | Role: ${user.role} | Organisation ID: ${user.organi
 
 exports.sendMessage = async (req, res, next) => {
   try {
-    if (!LLAMA_API_KEY) {
-      return res.status(503).json({ error: 'AI assistant is not configured. Please contact your administrator.' });
+    if (rawKeys.length === 0) {
+      return res.status(503).json({ message: 'AI assistant is not configured. Please contact your administrator.' });
     }
 
     const user = req.user; // Comes from authenticate middleware — never from body
     const { message, sessionId: clientSessionId, context } = req.body;
 
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
-      return res.status(400).json({ error: 'Message is required.' });
+      return res.status(400).json({ message: 'Message is required.' });
     }
     if (message.length > 2000) {
-      return res.status(400).json({ error: 'Message too long (max 2000 characters).' });
+      return res.status(400).json({ message: 'Message too long (max 2000 characters).' });
     }
 
     const sessionId = getSessionId(user._id);
@@ -169,7 +200,7 @@ exports.sendMessage = async (req, res, next) => {
       if (context.entityId && context.entityType) {
         try {
           const token = req.headers.authorization;
-          const TMS_API_BASE = process.env.TMS_API_BASE || 'http://localhost:3000/api';
+          const TMS_API_BASE = (process.env.TMS_API_BASE || 'http://localhost:3000/api').replace(/\/+$/, '');
           let endpoint = '';
           if (context.entityType === 'task') endpoint = `/tasks/${context.entityId}`;
           else if (context.entityType === 'project') endpoint = `/projects/${context.entityId}`;
@@ -200,14 +231,24 @@ exports.sendMessage = async (req, res, next) => {
       }
     }
 
-    // Clean Mongoose internal fields (_id) from the subdocuments
-    const history = session.history.slice(-20).map(m => ({
-      role: m.role,
-      content: m.content === null ? '' : m.content,
-      ...(m.tool_calls && m.tool_calls.length > 0 && { tool_calls: m.tool_calls }),
-      ...(m.tool_call_id && { tool_call_id: m.tool_call_id }),
-      ...(m.name && { name: m.name }),
-    }));
+    // Clean Mongoose internal fields (_id) from the subdocuments and aggressive token pruning
+    const history = session.history.slice(-8).map(m => {
+      let content = m.content === null ? '' : m.content;
+      
+      // If this is an old tool output, we aggressively truncate it because the AI 
+      // already read it and summarized it in a previous turn. This saves ~90% of tokens.
+      if (m.role === 'tool' && typeof content === 'string' && content.length > 300) {
+        content = content.substring(0, 300) + '... [Raw data omitted from history to save tokens. Refer to your previous summary.]';
+      }
+
+      return {
+        role: m.role,
+        content,
+        ...(m.tool_calls && m.tool_calls.length > 0 && { tool_calls: m.tool_calls }),
+        ...(m.tool_call_id && { tool_call_id: m.tool_call_id }),
+        ...(m.name && { name: m.name }),
+      };
+    });
     
     const newUserMsg = { role: 'user', content: message.trim() };
     const messages = [systemMsg, ...(contextDataMsg ? [contextDataMsg] : []), ...history, newUserMsg];
@@ -220,7 +261,7 @@ exports.sendMessage = async (req, res, next) => {
     } catch (err) {
       console.error('[Agent] callLlama failed:', err.response?.data || err.message);
       require('fs').writeFileSync('llama-error.log', JSON.stringify(err.response?.data || err.message, null, 2));
-      return res.status(502).json({ error: "I'm having trouble connecting to the AI service. Please try again in a moment." });
+      return res.status(502).json({ message: "I'm having trouble connecting to the AI service. Please try again in a moment." });
     }
 
     // ── Plain text response (no tool call) ────────────────────────────────────
@@ -413,7 +454,7 @@ exports.confirmAction = async (req, res, next) => {
     const session = await AgentSession.findOne({ sessionId });
 
     if (!session || !session.pendingConfirm || !session.pendingConfirm.toolName) {
-      return res.status(400).json({ error: 'No pending action to confirm.' });
+      return res.status(400).json({ message: 'No pending action to confirm.' });
     }
 
     const { toolName, args, requiresTypeConfirm, confirmTarget, context } = session.pendingConfirm;
@@ -422,7 +463,7 @@ exports.confirmAction = async (req, res, next) => {
     if (requiresTypeConfirm) {
       if (!typeConfirmValue || typeConfirmValue.trim() !== confirmTarget) {
         return res.status(400).json({
-          error: `Please type the exact name "${confirmTarget}" to confirm this action.`,
+          message: `Please type the exact name "${confirmTarget}" to confirm this action.`,
         });
       }
     }

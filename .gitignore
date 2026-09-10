@@ -27,7 +27,10 @@ backend/uploads/
 .vscode/
 .idea/
 
-# Local Scripts
+# Local Scripts & Logs
 backend/clean-tasks.js
 backend/wipe-db.js
 backend/test-*.js
+backend/test_*.js
+backend/scratch_*.js
+backend/*.log
