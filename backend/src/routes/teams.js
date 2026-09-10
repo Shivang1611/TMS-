@@ -6,7 +6,7 @@ const { authorize } = require('../middleware/auth');
 const validators = require('../validators');
 
 // POST /api/teams — Create team (Admin+)
-router.post('/', authorize('Founder', 'Admin'), validate(validators.createTeam), teamController.createTeam);
+router.post('/', authorize('Founder', 'Admin', 'HR'), validate(validators.createTeam), teamController.createTeam);
 
 // GET /api/teams — List teams (filterable by department)
 router.get('/', teamController.listTeams);
@@ -15,15 +15,15 @@ router.get('/', teamController.listTeams);
 router.get('/:id', teamController.getTeam);
 
 // PATCH /api/teams/:id — Update team (Admin+)
-router.patch('/:id', authorize('Founder', 'Admin'), validate(validators.updateTeam), teamController.updateTeam);
+router.patch('/:id', authorize('Founder', 'Admin', 'HR'), validate(validators.updateTeam), teamController.updateTeam);
 
 // DELETE /api/teams/:id — Delete team (Admin+)
-router.delete('/:id', authorize('Founder', 'Admin'), teamController.deleteTeam);
+router.delete('/:id', authorize('Founder', 'Admin', 'HR'), teamController.deleteTeam);
 
 // POST /api/teams/:id/members — Add members to team (Admin/Manager)
-router.post('/:id/members', authorize('Founder', 'Admin', 'Manager'), validate(validators.addTeamMembers), teamController.addMembers);
+router.post('/:id/members', authorize('Founder', 'Admin', 'Manager', 'HR'), validate(validators.addTeamMembers), teamController.addMembers);
 
 // DELETE /api/teams/:id/members/:userId — Remove member from team
-router.delete('/:id/members/:userId', authorize('Founder', 'Admin', 'Manager'), teamController.removeMember);
+router.delete('/:id/members/:userId', authorize('Founder', 'Admin', 'Manager', 'HR'), teamController.removeMember);
 
 module.exports = router;

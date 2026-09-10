@@ -6,10 +6,10 @@ const { authorize } = require('../middleware/auth');
 const validators = require('../validators');
 
 // POST /api/users/invite — Invite a new employee (Admin+)
-router.post('/invite', authorize('Founder', 'Admin'), validate(validators.inviteUser), userController.inviteUser);
+router.post('/invite', authorize('Founder', 'Admin', 'Manager', 'HR'), validate(validators.inviteUser), userController.inviteUser);
 
 // POST /api/users/bulk-invite — Bulk invite employees (Admin+)
-router.post('/bulk-invite', authorize('Founder', 'Admin'), validate(validators.bulkInvite), userController.bulkInvite);
+router.post('/bulk-invite', authorize('Founder', 'Admin', 'Manager', 'HR'), validate(validators.bulkInvite), userController.bulkInvite);
 
 // GET /api/users — List users in organization (filterable)
 router.get('/', userController.listUsers);

@@ -14,17 +14,21 @@ import {
   FileText
 } from 'lucide-react';
 
-// Removed static navItems to define dynamically inside the component
-const adminItems = [
-  { to: '/reports', icon: BarChart3, label: 'Reports' },
-  { to: '/audit-log', icon: ScrollText, label: 'Audit Log' },
-];
+// Admin items will be defined dynamically inside the component
 
 export default function Sidebar({ collapsed, onToggle }) {
   const { user } = useAuth();
   const isAdmin = ['Founder', 'Admin'].includes(user?.role);
   const isManager = ['Founder', 'Admin', 'Manager', 'Team Lead', 'HR'].includes(user?.role);
   const canManageStaff = ['Founder', 'Admin', 'Manager', 'Team Lead', 'HR'].includes(user?.role);
+  const canViewReports = ['Founder', 'Admin', 'Manager', 'HR'].includes(user?.role);
+
+  const adminItems = [
+    ...(canViewReports ? [{ to: '/reports', icon: BarChart3, label: 'Reports' }] : []),
+    ...(isAdmin ? [{ to: '/audit-log', icon: ScrollText, label: 'Audit Log' }] : []),
+  ];
+
+  const hasAdminSection = adminItems.length > 0;
 
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -92,7 +96,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         ))}
 
         {/* Admin section */}
-        {isAdmin && !collapsed && (
+        {hasAdminSection && !collapsed && (
           <div className="pt-4">
             <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-surface-400">
               Administration
@@ -115,7 +119,7 @@ export default function Sidebar({ collapsed, onToggle }) {
             ))}
           </div>
         )}
-        {isAdmin && collapsed && (
+        {hasAdminSection && collapsed && (
           <div className="pt-4">
             {adminItems.map((item) => (
               <NavLink

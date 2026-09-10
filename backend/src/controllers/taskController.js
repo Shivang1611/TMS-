@@ -371,9 +371,9 @@ exports.assignTask = asyncHandler(async (req, res) => {
   const task = await Task.findOne({ _id: req.params.id, isDeleted: false });
   if (!task) throw ApiError.notFound('Task');
 
-  const allowedRoles = ['Founder', 'Admin', 'Manager', 'Team Leader', 'Team Lead'];
+  const allowedRoles = ['Founder', 'Admin', 'Manager', 'Team Leader', 'Team Lead', 'HR'];
   if (!allowedRoles.includes(req.user.role)) {
-    throw ApiError.forbidden('Only Managers or Team Leaders can assign or reassign tasks.');
+    throw ApiError.forbidden('Only Managers, HR, or Team Leaders can assign or reassign tasks.');
   }
 
   if (!assigneeIds || (Array.isArray(assigneeIds) && assigneeIds.length === 0)) {
@@ -391,6 +391,14 @@ exports.assignTask = asyncHandler(async (req, res) => {
   const ids = Array.isArray(assigneeIds) ? assigneeIds : [assigneeIds];
   const users = await User.find({ _id: { $in: ids }, organization: req.user.organization, isDeleted: false, isActive: true });
   if (users.length !== ids.length) throw ApiError.badRequest('One or more users are not members of this organization or are inactive');
+
+  if (req.user.role === 'HR') {
+    for (const u of users) {
+      if (u.role !== 'Employee') {
+        throw ApiError.forbidden('HR can only assign tasks to Employees.');
+      }
+    }
+  }
 
   task.assignees = ids;
   await task.save();

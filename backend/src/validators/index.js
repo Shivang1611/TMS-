@@ -195,6 +195,7 @@ const createTask = Joi.object({
   estimatedEffort: Joi.number().min(0).allow(null),
   parentTaskId: objectId.allow(null),
   allowAssigneeToEdit: Joi.boolean().default(false),
+  workScope: Joi.string().valid('Quick', 'Half Day', 'Full Day', 'Multi-Day').default('Full Day'),
 });
 
 const updateTask = Joi.object({

@@ -58,7 +58,7 @@ function ManagerRoute({ children }) {
     );
   }
   
-  const isManager = ['Founder', 'Admin', 'Manager', 'Team Lead'].includes(user?.role);
+  const isManager = ['Founder', 'Admin', 'Manager', 'Team Lead', 'HR'].includes(user?.role);
   if (!isManager) {
     return <Navigate to="/my-tasks" replace />;
   }

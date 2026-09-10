@@ -23,7 +23,7 @@ export default function TaskCreate() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const canCreate = ['Founder', 'Admin', 'Manager', 'Team Lead'].includes(user?.role);
+  const canCreate = ['Founder', 'Admin', 'Manager', 'Team Lead', 'HR'].includes(user?.role);
 
   const location = useLocation();
   const { assigneeId = '', teamId = '', projectId = '' } = location.state || {};
@@ -102,13 +102,17 @@ export default function TaskCreate() {
   const selectedTeam = teams.find((t) => t._id === form.teamId);
 
   // Filter assignees based on selected Team
-  const availableUsers = selectedTeam
+  let availableUsers = selectedTeam
     ? allUsers.filter((u) => {
         const isInTeam = u.teams?.some(t => t._id === selectedTeam._id || t === selectedTeam._id);
         const isTeamLead = selectedTeam.teamLeads?.some((tl) => tl._id === u._id || tl === u._id);
         return isInTeam || isTeamLead;
       })
     : allUsers;
+
+  if (user?.role === 'HR') {
+    availableUsers = availableUsers.filter(u => u.role === 'Employee');
+  }
 
   return (
     <div className="mx-auto max-w-5xl">

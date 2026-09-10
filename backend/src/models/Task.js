@@ -90,7 +90,7 @@ const taskSchema = new mongoose.Schema(
     workScope: {
       type: String,
       enum: ['Quick', 'Half Day', 'Full Day', 'Multi-Day'],
-      default: 'Half Day',
+      default: 'Full Day',
     },
     adminRating: {
       type: String,

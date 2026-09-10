@@ -46,7 +46,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
 
   const task = data?.data;
 
-  const isManager = ['Founder', 'Admin', 'Manager', 'Team Leader', 'Team Lead'].includes(user?.role);
+  const isManager = ['Founder', 'Admin', 'Manager', 'Team Leader', 'Team Lead', 'HR'].includes(user?.role);
   const canEdit = isManager || (task?.assignees?.some(a => a._id === user?._id) && task?.allowAssigneeToEdit && task?.status !== 'Done');
 
   useEffect(() => {
@@ -61,7 +61,10 @@ export default function TaskDetailModal({ taskId, onClose }) {
     queryFn: () => userApi.list({}),
     enabled: showAssigneePicker,
   });
-  const allUsers = usersData?.data || [];
+  let allUsers = usersData?.data || [];
+  if (user?.role === 'HR') {
+    allUsers = allUsers.filter(u => u.role === 'Employee');
+  }
 
   const statusMutation = useMutation({
     mutationFn: (statusData) => taskApi.updateStatus(taskId, statusData),
@@ -209,6 +212,38 @@ export default function TaskDetailModal({ taskId, onClose }) {
   };
 
   if (!taskId) return null;
+
+  let displayPoints = task?.pointsAwarded || 0;
+  if (task && displayPoints === 0 && task.status === 'Done') {
+    const SCOPES = { 'Half Day': 10, 'Full Day': 20, 'Quick': 5, 'Multi-Day': 35 };
+    
+    // Legacy rule: Before Sept 7, 2026, a Full Day was 15 points.
+    const cutoffDate = new Date('2026-09-07T00:00:00Z');
+    const taskDate = task.completedAt ? new Date(task.completedAt) : new Date(task.createdAt);
+    if (taskDate < cutoffDate) {
+      SCOPES['Full Day'] = 15;
+    }
+
+    const RATINGS = { 'Outstanding': 1.2, 'Good': 1.0, 'Needs Polish': 0.75 };
+    const PRIORITY_MULT = { 'Critical': 1.4, 'High': 1.2, 'Medium': 1.0, 'Low': 0.8 };
+
+    const scope = task.workScope || 'Full Day';
+    const rating = task.adminRating || 'Good';
+    const base = SCOPES[scope] || 20;
+    const ratingMult = RATINGS[rating] || 1.0;
+    const prioMult = PRIORITY_MULT[task.priority] || 1.0;
+
+    let isOnTime = true;
+    if (task.dueDate && task.completedAt) {
+      const endOfDueDate = new Date(task.dueDate);
+      endOfDueDate.setUTCHours(23, 59, 59, 999);
+      isOnTime = new Date(task.completedAt) <= endOfDueDate;
+    }
+    const timeMult = isOnTime ? 1.0 : 0.7;
+    const reworkMult = task.reworkNeeded ? 0.8 : 1.0;
+
+    displayPoints = Math.max(1, Math.round(base * prioMult * ratingMult * timeMult * reworkMult));
+  }
 
   return (
     <div
@@ -400,7 +435,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
                 <div>
                   {isManager ? (
                     <select
-                      value={task.workScope || 'Half Day'}
+                      value={task.workScope || 'Full Day'}
                       onChange={(e) => updateScopeMutation.mutate(e.target.value)}
                       disabled={updateScopeMutation.isPending}
                       className="appearance-none rounded-full px-3 py-1 text-xs font-semibold bg-surface-100 text-surface-800 border border-surface-200 cursor-pointer focus:outline-none hover:bg-surface-200 transition-colors"
@@ -412,7 +447,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
                     </select>
                   ) : (
                     <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-surface-100 text-surface-700">
-                      {task.workScope || 'Half Day'}
+                      {task.workScope || 'Full Day'}
                     </span>
                   )}
                 </div>
@@ -427,7 +462,7 @@ export default function TaskDetailModal({ taskId, onClose }) {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      +{task.pointsAwarded || 0} pts
+                      +{displayPoints} pts
                     </span>
                     {task.adminRating && (
                       <span className="text-[11px] text-surface-500 font-medium">

@@ -21,9 +21,13 @@ exports.inviteUser = asyncHandler(async (req, res) => {
   // Validate Role permissions
   if (['Founder', 'Admin'].includes(req.user.role)) {
     // Can assign any role
-  } else if (['Manager', 'HR'].includes(req.user.role)) {
+  } else if (req.user.role === 'Manager') {
     if (!['Team Lead', 'Employee'].includes(role)) {
-      throw ApiError.forbidden('Managers and HR can only assign Team Lead or Employee roles.');
+      throw ApiError.forbidden('Managers can only assign Team Lead or Employee roles.');
+    }
+  } else if (req.user.role === 'HR') {
+    if (role !== 'Employee') {
+      throw ApiError.forbidden('HR can only assign the Employee role.');
     }
   } else if (req.user.role === 'Team Lead') {
     if (role !== 'Employee') {
@@ -98,9 +102,13 @@ exports.bulkInvite = asyncHandler(async (req, res) => {
   // Validate Role permissions
   if (['Founder', 'Admin'].includes(req.user.role)) {
     // Can assign any role
-  } else if (['Manager', 'HR'].includes(req.user.role)) {
+  } else if (req.user.role === 'Manager') {
     if (!['Team Lead', 'Employee'].includes(role)) {
-      throw ApiError.forbidden('Managers and HR can only assign Team Lead or Employee roles.');
+      throw ApiError.forbidden('Managers can only assign Team Lead or Employee roles.');
+    }
+  } else if (req.user.role === 'HR') {
+    if (role !== 'Employee') {
+      throw ApiError.forbidden('HR can only assign the Employee role.');
     }
   } else if (req.user.role === 'Team Lead') {
     if (role !== 'Employee') {

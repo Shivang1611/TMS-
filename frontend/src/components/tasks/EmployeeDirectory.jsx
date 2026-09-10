@@ -1,11 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Plus, ArrowLeft, FolderKanban, Settings, CheckSquare } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import ManageTeamModal from '../teams/ManageTeamModal';
 
 export default function EmployeeDirectory({ users = [], selectedProjectName, team, onSelectEmployee, onBack, isDirectAssign }) {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [showManageTeam, setShowManageTeam] = useState(false);
+
+  const displayUsers = currentUser?.role === 'HR' 
+    ? users.filter(u => u.role === 'Employee')
+    : users;
 
   return (
     <div className="space-y-6 bg-white p-6 rounded-2xl border border-surface-200 shadow-sm w-full font-sans">
@@ -36,18 +42,18 @@ export default function EmployeeDirectory({ users = [], selectedProjectName, tea
             </button>
           )}
           <span className="rounded-full bg-surface-100 px-3 py-1 text-xs font-semibold text-surface-600">
-            {users.length} member(s)
+            {displayUsers.length} member(s)
           </span>
         </div>
       </div>
       )}
 
       {/* Employee Rows — Full Page Row Form */}
-      {users.length === 0 ? (
+      {displayUsers.length === 0 ? (
         <p className="py-8 text-center text-surface-400 text-xs italic">No active members found in this workspace team.</p>
       ) : (
         <div className="space-y-3 font-sans text-sm">
-          {users.map((u) => (
+          {displayUsers.map((u) => (
             <div
               key={u._id}
               className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-surface-200 bg-surface-50/50 p-4 hover:bg-white hover:border-amber-400 hover:shadow-sm transition-all"

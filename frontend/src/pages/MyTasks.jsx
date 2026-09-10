@@ -18,10 +18,10 @@ export default function MyTasks() {
   const [activeTab, setActiveTab] = useState('List');
   const [activeTaskId, setActiveTaskId] = useState(null);
   
-  const isManager = ['Founder', 'Admin', 'Manager', 'Team Lead'].includes(user?.role);
+  const isManager = ['Founder', 'Admin', 'Manager', 'Team Lead', 'HR'].includes(user?.role);
   const [viewMode, setViewMode] = useState(
-    ['Founder', 'Admin', 'Manager'].includes(user?.role) ? 'assignedByMe' : 'assignedToMe'
-  ); // 'assignedToMe' or 'assignedByMe'
+    ['Founder', 'Admin', 'Manager', 'HR'].includes(user?.role) ? 'all' : 'assignedToMe'
+  ); // 'all', 'assignedToMe' or 'assignedByMe'
 
   const queryClient = useQueryClient();
 
@@ -38,7 +38,7 @@ export default function MyTasks() {
   const { data, isLoading } = useQuery({
     queryKey: ['my-tasks', user?._id, viewMode],
     queryFn: () => taskApi.list({ 
-      ...(viewMode === 'assignedToMe' ? { assigneeIds: user?._id } : { createdBy: user?._id }),
+      ...(viewMode === 'assignedToMe' ? { assigneeIds: user?._id } : viewMode === 'assignedByMe' ? { createdBy: user?._id } : {}),
       pageSize: 500 
     }),
     enabled: !!user?._id,
@@ -65,7 +65,10 @@ export default function MyTasks() {
       if (employeeFilter) {
         if (viewMode === 'assignedToMe') {
           if (t.createdBy?._id !== employeeFilter && t.createdBy !== employeeFilter) return false;
+        } else if (viewMode === 'assignedByMe') {
+          if (!t.assignees?.some(a => a._id === employeeFilter || a === employeeFilter)) return false;
         } else {
+          // For 'all' viewMode, filter by assignees
           if (!t.assignees?.some(a => a._id === employeeFilter || a === employeeFilter)) return false;
         }
       }
@@ -165,13 +168,23 @@ export default function MyTasks() {
             <p className="text-sm text-surface-500">
               {viewMode === 'assignedToMe' 
                 ? 'Your prioritized work assigned by your manager' 
-                : 'Tasks you have delegated and assigned to others'}
+                : viewMode === 'assignedByMe'
+                  ? 'Tasks you have delegated and assigned to others'
+                  : 'All tasks across the organization'}
             </p>
           </div>
         </div>
 
         {isManager && (
           <div className="flex bg-surface-100 p-1 rounded-lg shrink-0 overflow-x-auto w-full sm:w-auto">
+            {['Founder', 'Admin', 'Manager', 'HR'].includes(user?.role) && (
+              <button 
+                onClick={() => setViewMode('all')}
+                className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${viewMode === 'all' ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700'}`}
+              >
+                All Tasks
+              </button>
+            )}
             <button 
               onClick={() => setViewMode('assignedToMe')}
               className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${viewMode === 'assignedToMe' ? 'bg-white text-surface-900 shadow-sm' : 'text-surface-500 hover:text-surface-700'}`}
@@ -317,7 +330,7 @@ export default function MyTasks() {
               <thead className="bg-surface-50 font-semibold text-surface-500 border-b border-surface-200">
                 <tr>
                   <th className="px-6 py-4">Task Name</th>
-                  {viewMode === 'assignedByMe' && (
+                  {viewMode !== 'assignedToMe' && (
                     <th className="px-6 py-4 w-40">Assignees</th>
                   )}
                   <th className="px-6 py-4 w-40">Due Date</th>
@@ -330,10 +343,12 @@ export default function MyTasks() {
               <tbody className="divide-y divide-surface-100 bg-white">
                 {tasks.length === 0 ? (
                   <tr>
-                    <td colSpan={viewMode === 'assignedByMe' ? 6 : 5} className="px-6 py-12 text-center text-surface-400 italic">
+                    <td colSpan={viewMode !== 'assignedToMe' ? 6 : 5} className="px-6 py-12 text-center text-surface-400 italic">
                       {viewMode === 'assignedToMe' 
                         ? 'You have no assigned tasks. Enjoy your day!' 
-                        : "You haven't assigned any tasks to others yet."}
+                        : viewMode === 'assignedByMe' 
+                          ? "You haven't assigned any tasks to others yet."
+                          : "No tasks found in the organization."}
                     </td>
                   </tr>
                 ) : (
@@ -349,7 +364,7 @@ export default function MyTasks() {
                           <span className="truncate max-w-md">{t.title}</span>
                         </div>
                       </td>
-                      {viewMode === 'assignedByMe' && (
+                      {viewMode !== 'assignedToMe' && (
                         <td className="px-6 py-4 text-surface-700 font-medium whitespace-nowrap">
                           {t.assignees && t.assignees.length > 0 
                             ? t.assignees.map(a => a.name).join(', ') 
