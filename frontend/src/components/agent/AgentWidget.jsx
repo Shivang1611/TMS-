@@ -219,7 +219,8 @@ export default function AgentWidget() {
           addMessage({ role: 'assistant', type: 'text', content: res.message || 'Done.' });
       }
     } catch (err) {
-      addMessage({ role: 'assistant', type: 'error', content: 'Something went wrong. Please try again.' });
+      const errorMsg = err.response?.data?.message || err.message || 'Something went wrong. Please try again.';
+      addMessage({ role: 'assistant', type: 'error', content: errorMsg });
     } finally {
       setIsLoading(false);
     }
@@ -244,8 +245,9 @@ export default function AgentWidget() {
       } else if (res.type === 'error') {
         addMessage({ role: 'assistant', type: 'error', content: res.message });
       }
-    } catch {
-      addMessage({ role: 'assistant', type: 'error', content: 'Confirmation failed. Please try again.' });
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message || 'Confirmation failed. Please try again.';
+      addMessage({ role: 'assistant', type: 'error', content: errorMsg });
     } finally {
       setIsConfirming(false);
     }
