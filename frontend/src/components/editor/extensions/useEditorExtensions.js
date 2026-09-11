@@ -63,9 +63,7 @@ export function useEditorExtensions({ placeholder }) {
         { TableRow },
         { TableCell },
         { TableHeader },
-        { Details },
-        { DetailsContent },
-        { DetailsSummary },
+        { Details, DetailsContent, DetailsSummary },
       ] = await Promise.all([
         import('@tiptap/extension-code-block-lowlight'),
         import('lowlight'),
@@ -74,8 +72,6 @@ export function useEditorExtensions({ placeholder }) {
         import('@tiptap/extension-table-cell'),
         import('@tiptap/extension-table-header'),
         import('@tiptap/extension-details'),
-        import('@tiptap/extension-details-content'),
-        import('@tiptap/extension-details-summary'),
       ]);
 
       if (cancelled) return;
