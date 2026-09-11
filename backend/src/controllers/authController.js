@@ -1,8 +1,11 @@
+const fs = require('fs');
+const path = require('path');
 const bcrypt = require('bcryptjs');
 const { User, Organization } = require('../models');
 const { generateToken } = require('../middleware/auth');
 const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
+const s3 = require('../utils/s3');
 
 /**
  * POST /api/auth/register
@@ -179,19 +182,42 @@ exports.uploadAvatar = asyncHandler(async (req, res) => {
     throw ApiError.badRequest('No file uploaded');
   }
 
-  // TODO: In production, upload to S3-compatible storage
-  // Store a placeholder URL referencing the local upload
-  const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+  let avatarUrl = '';
+
+  // 1. Try Vultr S3 upload if credentials exist
+  if (process.env.VULTR_ACCESS_KEY && process.env.VULTR_SECRET_KEY) {
+    try {
+      const s3Res = await s3.uploadToS3(req.file.buffer, req.file.originalname, req.file.mimetype, 'avatars');
+      avatarUrl = s3Res.url;
+    } catch (s3Err) {
+      console.warn('[Avatar Upload] S3 upload failed, using local storage fallback:', s3Err.message);
+    }
+  }
+
+  // 2. Fallback to local disk storage
+  if (!avatarUrl) {
+    const uploadDir = path.join(__dirname, '../../uploads/avatars');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const ext = path.extname(req.file.originalname) || '.jpg';
+    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    const filePath = path.join(uploadDir, filename);
+
+    await fs.promises.writeFile(filePath, req.file.buffer);
+    avatarUrl = `/uploads/avatars/${filename}`;
+  }
 
   const user = await User.findByIdAndUpdate(
     req.user._id,
     { $set: { 'profile.avatar': avatarUrl } },
     { new: true, runValidators: true }
-  );
+  ).populate('organization department teams');
 
   res.json({
     success: true,
     data: user,
-    message: 'Avatar updated',
+    message: 'Avatar updated successfully',
   });
 });

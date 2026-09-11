@@ -4,22 +4,9 @@ const multer = require('multer');
 const authController = require('../controllers/authController');
 const validate = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
-const validators = require('../validators');
-
-const path = require('path');
-
-// Multer config for avatar upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads/avatars'));
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
-
+// Multer memoryStorage config for avatar upload
 const avatarUpload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
   fileFilter: (_req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
