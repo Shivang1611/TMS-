@@ -18,11 +18,11 @@ const { executeToolCall, confirmAndExecute } = require('./toolExecutor');
 const toolSchemas = require('./tool-schemas.json');
 const axios = require('axios');
 
-function truncateResult(result, maxChars = 12000) {
+function truncateResult(result, maxChars = 3000) {
   let str = JSON.stringify(result);
   if (!str || str.length <= maxChars) return str || 'null';
   if (Array.isArray(result)) {
-    for (let i = 15; i > 0; i--) {
+    for (let i = 10; i > 0; i--) {
       const sliced = result.slice(0, i);
       const slicedStr = JSON.stringify({ 
         note: `Results truncated due to size limit. Showing ${i} out of ${result.length} items.`, 
@@ -103,7 +103,7 @@ async function callLlama(messages, tools, retryCount = 0) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
-        timeout: 30000,
+        timeout: 35000,
       }
     );
 
@@ -111,11 +111,16 @@ async function callLlama(messages, tools, retryCount = 0) {
     if (!choice) throw new Error('No choices returned from Groq/Llama API');
     return choice.message;
   } catch (err) {
-    const maxRetries = rawKeys.length > 1 ? rawKeys.length + 1 : 2;
+    const maxRetries = 3;
     if (err.response?.status === 429 && retryCount < maxRetries) {
       rotateLlamaApiKey();
-      const delay = rawKeys.length > 1 ? 500 : 2000 * (retryCount + 1);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      const errMsg = err.response?.data?.error?.message || '';
+      const match = errMsg.match(/try again in ([0-9.]+)s/i);
+      let waitMs = match ? Math.min(Math.ceil(parseFloat(match[1]) * 1000) + 500, 8000) : (retryCount + 1) * 2500;
+
+      console.warn(`[Agent] Rate limit 429 hit. Retrying in ${waitMs}ms (attempt ${retryCount + 1}/${maxRetries})...`);
+      await new Promise(resolve => setTimeout(resolve, waitMs));
       return callLlama(messages, tools, retryCount + 1);
     }
     throw err;
