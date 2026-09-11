@@ -90,15 +90,77 @@ const getPriorityBadge = (priority) => {
   return <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600">Low</span>;
 };
 
+// ─── Content Sanitizer (Strips Mongo IDs & ID Table Columns) ─────────────────
+
+function sanitizeContent(content) {
+  if (!content) return '';
+
+  let cleaned = content;
+
+  // 1. Process line by line to detect markdown tables and strip ID columns
+  const lines = cleaned.split('\n');
+  const processedLines = [];
+  let inTable = false;
+  let idColumnIndices = new Set();
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isTableLine = /^\s*\|.*\|\s*$/.test(line);
+
+    if (isTableLine) {
+      const cells = line.split('|').map((c) => c.trim());
+
+      if (!inTable) {
+        // Header row
+        inTable = true;
+        idColumnIndices = new Set();
+        cells.forEach((cell, idx) => {
+          const lower = cell.toLowerCase().replace(/[*_`]/g, '').trim();
+          if (
+            lower === 'task id' ||
+            lower === 'id' ||
+            lower === 'mongo id' ||
+            lower === 'object id' ||
+            lower === 'user id' ||
+            lower === 'project id' ||
+            lower === '_id'
+          ) {
+            idColumnIndices.add(idx);
+          }
+        });
+      }
+
+      // Filter out cells at idColumnIndices
+      const newCells = cells.filter((_, idx) => !idColumnIndices.has(idx));
+      processedLines.push(newCells.join(' | '));
+    } else {
+      inTable = false;
+      idColumnIndices.clear();
+      processedLines.push(line);
+    }
+  }
+
+  cleaned = processedLines.join('\n');
+
+  // 2. Strip any leftover standalone 24-character hexadecimal MongoDB ObjectIds and orphaned ID labels
+  cleaned = cleaned
+    .replace(/\b[0-9a-fA-F]{24}\b/g, '')
+    .replace(/(?:Task|Project|User|Mongo|Object)?[ \t]*ID:[ \t]*/gi, '')
+    .replace(/\*\*(?:Task|Project|User|Mongo|Object)?[ \t]*ID\*\*:[ \t]*/gi, '')
+    .replace(/\(ID:\s*\)/gi, '')
+    .replace(/\(\s*\)/g, '')
+    .replace(/(?:\r\n|\r|\n)?-[ \t]*\*\*Title:\*\*/g, '\n- **Title:**')
+    .replace(/[ \t]*\*\*Description:\*\*/g, '\n  **Description:**');
+
+  return cleaned;
+}
+
 // ─── Smart Formatting Parser ──────────────────────────────────────────────────
 
 function FormattedText({ content }) {
   if (!content) return null;
 
-  // Pre-process text to convert single-line squashed task responses into markdown lists if needed
-  let cleaned = content
-    .replace(/(?:\r\n|\r|\n)?-\s*\*\*Title:\*\*/g, '\n- **Title:**')
-    .replace(/\s*\*\*Description:\*\*/g, '\n  **Description:**');
+  const cleaned = sanitizeContent(content);
 
   return (
     <div className="prose prose-sm max-w-none text-surface-900 text-xs sm:text-sm leading-relaxed">
@@ -130,6 +192,38 @@ function FormattedText({ content }) {
                 <code>{children}</code>
               </pre>
             ),
+          table: ({ children }) => (
+            <div className="my-2.5 w-full overflow-x-auto rounded-xl border border-surface-200 bg-white dark:bg-slate-900 shadow-2xs">
+              <table className="w-full text-left text-xs border-collapse min-w-full">
+                {children}
+              </table>
+            </div>
+          ),
+          thead: ({ children }) => (
+            <thead className="bg-slate-900 text-white font-medium">
+              {children}
+            </thead>
+          ),
+          tbody: ({ children }) => (
+            <tbody className="divide-y divide-surface-200 dark:divide-slate-800 text-surface-800 dark:text-slate-200">
+              {children}
+            </tbody>
+          ),
+          tr: ({ children }) => (
+            <tr className="hover:bg-surface-50 dark:hover:bg-slate-800/60 transition-colors">
+              {children}
+            </tr>
+          ),
+          th: ({ children }) => (
+            <th className="px-2.5 py-2 font-semibold text-[11px] text-slate-100 border-b border-slate-800 whitespace-nowrap">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="px-2.5 py-2 text-xs text-surface-800 dark:text-slate-200 border-b border-surface-100 dark:border-slate-800 align-top leading-snug">
+              {children}
+            </td>
+          ),
         }}
       >
         {cleaned}
@@ -223,7 +317,7 @@ function TaskCardItem({ item }) {
   );
 }
 
-function DataMessage({ message, toolName, data }) {
+function DataMessage({ message, _toolName, data }) {
   const [expanded, setExpanded] = useState(true);
   
   let records = [];
