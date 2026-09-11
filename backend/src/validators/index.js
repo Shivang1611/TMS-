@@ -107,22 +107,22 @@ const updateTeam = Joi.object({
 const inviteUser = Joi.object({
   email: Joi.string().email().required(),
   name: Joi.string().trim().max(100).required(),
-  role: Joi.string().valid('Admin', 'Manager', 'HR', 'Team Lead', 'Employee').required(),
+  role: Joi.string().valid('Founder', 'Admin', 'Manager', 'HR', 'Team Lead', 'Employee').required(),
   password: Joi.string().min(8).max(128).required(),
-  departmentId: objectId.allow(null),
+  departmentId: objectId.allow(null, ''),
   teamIds: Joi.array().items(objectId).default([]),
 });
 
 const bulkInvite = Joi.object({
   emails: Joi.array().items(Joi.string().email().trim().max(255)).min(1).max(100).required(),
-  role: Joi.string().valid('Admin', 'Manager', 'HR', 'Team Lead', 'Employee').required(),
+  role: Joi.string().valid('Founder', 'Admin', 'Manager', 'HR', 'Team Lead', 'Employee').required(),
   password: Joi.string().min(8).max(128).required(),
-  departmentId: objectId.allow(null),
+  departmentId: objectId.allow(null, ''),
   teamIds: Joi.array().items(objectId).default([]),
 });
 
 const updateUser = Joi.object({
-  role: Joi.string().valid('Admin', 'Manager', 'HR', 'Team Lead', 'Employee'),
+  role: Joi.string().valid('Founder', 'Admin', 'Manager', 'HR', 'Team Lead', 'Employee'),
   departmentId: objectId.allow(null, ''),
 });
 

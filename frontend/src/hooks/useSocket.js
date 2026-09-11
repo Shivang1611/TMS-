@@ -28,14 +28,15 @@ export default function useSocket(token) {
       return;
     }
 
-    // Connect
+    // Connect with limited reconnection to prevent console spam
     const socket = io(SOCKET_URL, {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      timeout: 10000,
     });
 
     socketRef.current = socket;
@@ -48,8 +49,18 @@ export default function useSocket(token) {
       console.log('[Socket] Disconnected:', reason);
     });
 
+    let errorCount = 0;
     socket.on('connect_error', (err) => {
-      console.warn('[Socket] Connection error:', err.message);
+      errorCount++;
+      if (errorCount <= 2) {
+        console.warn('[Socket] Connection error:', err.message);
+      } else if (errorCount === 3) {
+        console.warn('[Socket] Max retries approaching — real-time updates disabled. App will still work normally.');
+      }
+      // Stop reconnecting after 5 failures to prevent console flood
+      if (errorCount >= 5) {
+        socket.disconnect();
+      }
     });
 
     // ─── Task updated ────────────────────────────────────────────────

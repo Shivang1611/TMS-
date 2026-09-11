@@ -83,17 +83,17 @@
   },
   {
     "name": "getOverloadedMembers",
-    "description": "Get a list of team or department members who have more active tasks than the specified threshold.",
+    "description": "Get a list of team or department members who have more active tasks than the specified threshold. If teamId/departmentId are omitted, checks across the entire organization.",
     "parameters": {
       "type": "object",
       "properties": {
         "teamId": {
           "type": "string",
-          "description": "ID of the team (provide either teamId or departmentId)"
+          "description": "Optional: Team ID or Team Name (leave empty to check all teams)"
         },
         "departmentId": {
           "type": "string",
-          "description": "ID of the department"
+          "description": "Optional: Department ID or Department Name (leave empty to check all departments)"
         },
         "threshold": {
           "type": "number",
@@ -561,6 +561,7 @@
         "role": {
           "type": "string",
           "enum": [
+            "Founder",
             "Admin",
             "Manager",
             "HR",

@@ -53,6 +53,33 @@ async function writeAudit({ userId, organizationId, sessionId, toolName, args, r
   }
 }
 
+// ─── Task Sanitizer Helpers for LLM Token Efficiency ───────────────────────
+
+function sanitizeTask(t) {
+  if (!t) return null;
+  const rawDesc = t.description || t.details || '';
+  const cleanDesc = rawDesc.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return {
+    id: t._id || t.id,
+    title: t.title,
+    status: t.status,
+    priority: t.priority,
+    dueDate: t.dueDate ? new Date(t.dueDate).toISOString().split('T')[0] : null,
+    project: t.project?.name || t.projectName,
+    assignees: Array.isArray(t.assignees) ? t.assignees.map(a => a.name || a.email).filter(Boolean).join(', ') : (t.assigneeName || ''),
+    description: cleanDesc.length > 150 ? cleanDesc.substring(0, 150) + '...' : cleanDesc,
+  };
+}
+
+function sanitizeTaskList(resData) {
+  const items = Array.isArray(resData) ? resData : (resData?.data || []);
+  const sanitized = items.map(sanitizeTask).filter(Boolean);
+  return {
+    totalCount: resData?.pagination?.totalCount || sanitized.length,
+    data: sanitized.slice(0, 15),
+  };
+}
+
 // ─── Scope denial helper ──────────────────────────────────────────────────────
 
 function denied(reason) {
@@ -142,26 +169,26 @@ async function executeToolCall(toolName, args, requestingUser, userToken, sessio
         const params = {};
         if (args.status) params.status = args.status;
         const res = await api.get('/tasks', { params: { ...params, assigneeId: requestingUser._id } });
-        result = res.data;
+        result = sanitizeTaskList(res.data);
         break;
       }
 
       case 'getTaskDetails': {
         const res = await api.get(`/tasks/${args.taskId}`);
-        result = res.data;
+        result = sanitizeTask(res.data?.data || res.data);
         break;
       }
 
       case 'searchProjects': {
         const res = await api.get('/projects', { params: { search: args.searchQuery } });
-        result = res.data.data.map(p => ({ id: p._id, name: p.name, status: p.status, managerName: p.manager?.name }));
+        result = (res.data?.data || []).map(p => ({ id: p._id, name: p.name, status: p.status, managerName: p.manager?.name }));
         break;
       }
 
       case 'searchUsers': {
         const res = await api.get('/users', { params: { search: args.searchQuery } });
         // Return a condensed list to save tokens
-        result = res.data.data.map(u => ({ id: u._id, name: u.name, email: u.email, role: u.role }));
+        result = (res.data?.data || []).map(u => ({ id: u._id, name: u.name, email: u.email, role: u.role, score: u.score, tier: u.tier }));
         break;
       }
 
@@ -179,14 +206,28 @@ async function executeToolCall(toolName, args, requestingUser, userToken, sessio
         const params = { assigneeId: args.targetUserId };
         if (args.status) params.status = args.status;
         const res = await api.get('/tasks', { params });
-        result = res.data;
+        result = sanitizeTaskList(res.data);
         break;
       }
 
       case 'getUnassignedMembers': {
         const params = {};
-        if (args.teamId) params.teamId = args.teamId;
-        if (args.departmentId) params.departmentId = args.departmentId;
+        if (args.teamId) {
+          if (require('mongoose').Types.ObjectId.isValid(args.teamId)) {
+            params.teamId = args.teamId;
+          } else {
+            const team = await Team.findOne({ name: { $regex: new RegExp(args.teamId, 'i') }, organization: requestingUser.organization });
+            if (team) params.teamId = team._id;
+          }
+        }
+        if (args.departmentId) {
+          if (require('mongoose').Types.ObjectId.isValid(args.departmentId)) {
+            params.departmentId = args.departmentId;
+          } else {
+            const dept = await require('../models/Department').findOne({ name: { $regex: new RegExp(args.departmentId, 'i') }, organization: requestingUser.organization });
+            if (dept) params.departmentId = dept._id;
+          }
+        }
         const res = await api.get('/users', { params: { ...params, noActiveTasks: true } });
         result = res.data;
         break;
@@ -194,8 +235,22 @@ async function executeToolCall(toolName, args, requestingUser, userToken, sessio
 
       case 'getOverloadedMembers': {
         const params = { threshold: args.threshold || 5 };
-        if (args.teamId) params.teamId = args.teamId;
-        if (args.departmentId) params.departmentId = args.departmentId;
+        if (args.teamId) {
+          if (require('mongoose').Types.ObjectId.isValid(args.teamId)) {
+            params.teamId = args.teamId;
+          } else {
+            const team = await Team.findOne({ name: { $regex: new RegExp(args.teamId, 'i') }, organization: requestingUser.organization });
+            if (team) params.teamId = team._id;
+          }
+        }
+        if (args.departmentId) {
+          if (require('mongoose').Types.ObjectId.isValid(args.departmentId)) {
+            params.departmentId = args.departmentId;
+          } else {
+            const dept = await require('../models/Department').findOne({ name: { $regex: new RegExp(args.departmentId, 'i') }, organization: requestingUser.organization });
+            if (dept) params.departmentId = dept._id;
+          }
+        }
         const res = await api.get('/users', { params });
         result = res.data;
         break;
@@ -215,7 +270,7 @@ async function executeToolCall(toolName, args, requestingUser, userToken, sessio
         const scope = allowed.includes(args.scope) ? args.scope : 'self';
         const days = Math.min(args.days || 7, 90);
         const res = await api.get('/tasks', { params: { upcomingDays: days, scope } });
-        result = res.data;
+        result = sanitizeTaskList(res.data);
         break;
       }
 
@@ -231,7 +286,7 @@ async function executeToolCall(toolName, args, requestingUser, userToken, sessio
         const allowed = allowedScopes[requestingUser.role] || ['self'];
         const scope = allowed.includes(args.scope) ? args.scope : 'self';
         const res = await api.get('/tasks', { params: { overdue: true, scope } });
-        result = res.data;
+        result = sanitizeTaskList(res.data);
         break;
       }
 
