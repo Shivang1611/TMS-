@@ -16,7 +16,7 @@
     "@tiptap/extension-details": "^3.28.0",
     "@tiptap/extension-details-content": "^3.28.0",
     "@tiptap/extension-details-summary": "^3.28.0",
-    "@tiptap/extension-floating-menu": "^3.30.0",
+    "@tiptap/extension-floating-menu": "^3.28.0",
     "@tiptap/extension-gapcursor": "^3.28.0",
     "@tiptap/extension-highlight": "^3.28.0",
     "@tiptap/extension-image": "^3.28.0",
