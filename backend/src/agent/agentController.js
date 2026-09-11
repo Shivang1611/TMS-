@@ -34,25 +34,31 @@ function truncateResult(result, maxChars = 3000) {
   return str.substring(0, maxChars) + '... [TRUNCATED]';
 }
 
-const rawKeys = (process.env.LLAMA_API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
+function getLlamaApiKeys() {
+  const keysStr = process.env.LLAMA_API_KEY || '';
+  return keysStr.split(',').map((k) => k.trim()).filter(Boolean);
+}
+
 const LLAMA_BASE_URL = process.env.LLAMA_BASE_URL || 'https://api.llama.com/v1';
 const LLAMA_MODEL = process.env.LLAMA_MODEL || 'meta-llama/Llama-3.3-70B-Instruct';
-
-if (rawKeys.length === 0) {
-  console.error('[Agent] CRITICAL: LLAMA_API_KEY is not set. The agent will refuse all requests.');
-}
 
 let currentKeyIndex = 0;
 
 function getLlamaApiKey() {
-  if (rawKeys.length === 0) return null;
-  return rawKeys[currentKeyIndex];
+  const keys = getLlamaApiKeys();
+  if (keys.length === 0) {
+    console.error('[Agent] CRITICAL: LLAMA_API_KEY is not set. The agent will refuse all requests.');
+    return null;
+  }
+  if (currentKeyIndex >= keys.length) currentKeyIndex = 0;
+  return keys[currentKeyIndex];
 }
 
 function rotateLlamaApiKey() {
-  if (rawKeys.length > 1) {
-    currentKeyIndex = (currentKeyIndex + 1) % rawKeys.length;
-    console.log(`[Agent] Rate limit hit. Rotated to API key index ${currentKeyIndex}`);
+  const keys = getLlamaApiKeys();
+  if (keys.length > 1) {
+    currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+    console.log(`[Agent] Rate limit hit. Rotated to API key index ${currentKeyIndex + 1} of ${keys.length}`);
   }
 }
 
@@ -184,7 +190,7 @@ Current user: ${user.name} | Role: ${user.role} | Organisation ID: ${user.organi
 
 exports.sendMessage = async (req, res, next) => {
   try {
-    if (rawKeys.length === 0) {
+    if (getLlamaApiKeys().length === 0) {
       return res.status(503).json({ message: 'AI assistant is not configured. Please contact your administrator.' });
     }
 
@@ -260,27 +266,17 @@ exports.sendMessage = async (req, res, next) => {
       };
     }
 
-    // Clean Mongoose internal fields (_id) from the subdocuments and aggressive token pruning
-    const history = session.history.slice(-8).map(m => {
-      let content = m.content === null ? '' : m.content;
-      
-      // If this is an old tool output, we aggressively truncate it because the AI 
-      // already read it and summarized it in a previous turn. This saves ~90% of tokens.
-      if (m.role === 'tool' && typeof content === 'string' && content.length > 300) {
-        content = content.substring(0, 300) + '... [Raw data omitted from history to save tokens. Refer to your previous summary.]';
-      }
-
-      return {
+    // Prune history to only include clean user & assistant text messages from past turns (strip dead raw tool payloads)
+    const textHistory = session.history
+      .filter((m) => m.role === 'user' || (m.role === 'assistant' && typeof m.content === 'string' && m.content.trim().length > 0))
+      .slice(-6)
+      .map((m) => ({
         role: m.role,
-        content,
-        ...(m.tool_calls && m.tool_calls.length > 0 && { tool_calls: m.tool_calls }),
-        ...(m.tool_call_id && { tool_call_id: m.tool_call_id }),
-        ...(m.name && { name: m.name }),
-      };
-    });
-    
+        content: m.content.length > 250 ? m.content.substring(0, 250) + '...' : m.content,
+      }));
+
     const newUserMsg = { role: 'user', content: message.trim() };
-    const messages = [systemMsg, ...(contextDataMsg ? [contextDataMsg] : []), ...history, newUserMsg];
+    const messages = [systemMsg, ...(contextDataMsg ? [contextDataMsg] : []), ...textHistory, newUserMsg];
 
     // Call Llama (with retry on malformed tool call — Phase 6)
     let llamaResponse;
