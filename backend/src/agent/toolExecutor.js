@@ -179,6 +179,33 @@ async function executeToolCall(toolName, args, requestingUser, userToken, sessio
         break;
       }
 
+      case 'getUserScore': {
+        let targetId = requestingUser._id;
+        let targetName = requestingUser.name;
+
+        if (args.userName && args.userName !== 'me' && args.userName.trim()) {
+          const searchRes = await api.get('/users', { params: { search: args.userName.trim() } });
+          const users = searchRes.data?.data || [];
+          if (users.length > 0) {
+            targetId = users[0]._id || users[0].id;
+            targetName = users[0].name;
+          }
+        }
+
+        const res = await api.get(`/users/${targetId}/score`);
+        const scoreData = res.data?.data || res.data;
+        result = {
+          userName: targetName,
+          totalPoints: scoreData.score,
+          tier: scoreData.tier,
+          tierColor: scoreData.color,
+          nextTierInfo: scoreData.nextTier
+            ? `${scoreData.nextTier.pointsNeeded} more points needed for ${scoreData.nextTier.name} tier!`
+            : 'Top tier achieved!',
+        };
+        break;
+      }
+
       case 'searchProjects': {
         const res = await api.get('/projects', { params: { search: args.searchQuery } });
         result = (res.data?.data || []).map(p => ({ id: p._id, name: p.name, status: p.status, managerName: p.manager?.name }));

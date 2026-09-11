@@ -21,6 +21,20 @@
     }
   },
   {
+    "name": "getUserScore",
+    "description": "Get total points, performance score, current tier (e.g. Great, Excellent), and points needed for the next tier for yourself or another employee.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "userName": {
+          "type": "string",
+          "description": "Optional: Name of the employee or 'me' for current user. Defaults to current user if omitted."
+        }
+      },
+      "required": []
+    }
+  },
+  {
     "name": "getTaskDetails",
     "description": "Get detailed information about a specific task by its ID.",
     "parameters": {

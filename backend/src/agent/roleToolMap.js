@@ -13,6 +13,7 @@
 const READ_TOOLS_ALL = [
   'getMyTasks',
   'getTaskDetails',
+  'getUserScore',
   'getUpcomingDeadlines',
   'getOverdueTasks',
   'getProjectStatus',
