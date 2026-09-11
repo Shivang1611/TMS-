@@ -3,7 +3,9 @@ const router = express.Router();
 const multer = require('multer');
 const authController = require('../controllers/authController');
 const validate = require('../middleware/validate');
+const validators = require('../validators');
 const { authenticate } = require('../middleware/auth');
+
 // Multer memoryStorage config for avatar upload
 const avatarUpload = multer({
   storage: multer.memoryStorage(),
