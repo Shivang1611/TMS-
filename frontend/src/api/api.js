@@ -83,6 +83,13 @@ export const noteApi = {
   update: (id, data) => client.patch(`/notes/${id}`, data).then((r) => r.data),
   link: (id, taskId) => client.patch(`/notes/${id}/link`, { taskId }).then((r) => r.data),
   delete: (id) => client.delete(`/notes/${id}`).then((r) => r.data),
+  // ── sharing ──────────────────────────────────────────────────────────────
+  // shares: [{ userId, permission }]  permission = 'viewer' | 'editor'
+  share: (id, shares) => client.post(`/notes/${id}/share`, { shares }).then((r) => r.data),
+  updateSharePermission: (id, userId, permission) =>
+    client.patch(`/notes/${id}/share/${userId}`, { permission }).then((r) => r.data),
+  unshare: (id, userId) => client.delete(`/notes/${id}/share/${userId}`).then((r) => r.data),
+  copy: (id) => client.post(`/notes/${id}/copy`).then((r) => r.data),
 };
 
 export const searchApi = {

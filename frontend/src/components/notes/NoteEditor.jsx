@@ -47,8 +47,19 @@ export default function NoteEditor({ initialContent, onSave, readOnly = false })
     editable: !readOnly,
     editorProps: {
       attributes: {
-        class: 'focus:outline-none min-h-[250px] sm:min-h-[400px] h-full cursor-text',
+        // When readOnly, keep cursor as default (text pointer) so selection still works
+        class: `focus:outline-none min-h-[250px] sm:min-h-[400px] h-full ${readOnly ? 'cursor-default select-text' : 'cursor-text'}`,
       },
+      // Allow text selection and copy even when contenteditable=false
+      handleDOMEvents: readOnly
+        ? {
+            // returning false means "don't prevent default" → browser handles copy normally
+            copy: () => false,
+            cut: () => false,
+            selectstart: () => false,
+            mousedown: () => false,
+          }
+        : {},
     },
     onUpdate: ({ editor }) => {
       // Clear existing timeout
@@ -258,14 +269,15 @@ export default function NoteEditor({ initialContent, onSave, readOnly = false })
       )}
       
       <div 
-        className="p-3 sm:p-6 flex-1 overflow-y-auto prose dark:prose-invert prose-sm sm:prose-base max-w-none bg-white cursor-text"
+        className={`p-3 sm:p-6 flex-1 overflow-y-auto prose dark:prose-invert prose-sm sm:prose-base max-w-none bg-white ${readOnly ? 'cursor-default' : 'cursor-text'}`}
+        style={readOnly ? { userSelect: 'text', WebkitUserSelect: 'text' } : {}}
         onClick={() => {
-          if (editor && !editor.isFocused) {
+          if (editor && !readOnly && !editor.isFocused) {
             editor.commands.focus('end');
           }
         }}
       >
-        <EditorContent editor={editor} className="h-full min-h-[250px]" />
+        <EditorContent editor={editor} className={`h-full min-h-[250px] ${readOnly ? '[&_.ProseMirror]:select-text [&_.ProseMirror]:cursor-text' : ''}`} />
       </div>
     </div>
   );
